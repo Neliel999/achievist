@@ -800,6 +800,26 @@ async def get_earned_counts(conn, linked_account_id: int) -> dict[str, dict]:
     return {r["platform_app_id"]: {"earned": r["earned_achievements"], "stored": r["stored_achievements"]} for r in rows}
 
 
+async def get_psn_games_missing_trophy_details(conn) -> set[str]:
+    """
+    npCommunicationIds of PSN games with trophies stored under a "Trophy <id>"
+    placeholder name. The PSN sync used to read trophies only from the
+    per-user endpoint, which carries earned status but no name, description
+    or icon, so every trophy it stored looked like this — and its "nothing
+    new earned" shortcut would otherwise leave them that way for good.
+    """
+    rows = await _fetch(
+        conn,
+        """
+        SELECT DISTINCT pg.platform_app_id
+        FROM platform_games pg
+        JOIN achievements a ON a.platform_game_id = pg.id
+        WHERE pg.platform = 'psn' AND a.name = 'Trophy ' || a.platform_ach_id
+        """,
+    )
+    return {r["platform_app_id"] for r in rows}
+
+
 async def upsert_igdb_game(conn, igdb_id: int, name: str, cover_url: str) -> None:
     await conn.execute(
         """
