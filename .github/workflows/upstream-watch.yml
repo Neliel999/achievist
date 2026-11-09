@@ -1,0 +1,36 @@
+name: Upstream watch
+
+on:
+  schedule:
+    - cron: "17 3 * * *"   # nightly 03:17 UTC, off the top of the hour
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fetch upstream
+        run: |
+          git remote add upstream https://github.com/mayberts/achievist.git
+          git fetch upstream main
+      - name: Compare and open issue if new commits
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LOCAL=$(git rev-parse origin/main)
+          REMOTE=$(git rev-parse upstream/main)
+          if [ "$LOCAL" != "$REMOTE" ]; then
+            NEW=$(git rev-list --count origin/main..upstream/main)
+            if ! gh issue list --label upstream-sync --state open | grep -q .; then
+              gh issue create \
+                --title "Upstream activity: $NEW new commit(s) on mayberts/achievist" \
+                --label upstream-sync \
+                --body "Upstream main has moved ($LOCAL -> $REMOTE). Rebase stable, drop superseded patches, run tests, cut a new tag. Commits: https://github.com/mayberts/achievist/compare/$LOCAL...$REMOTE"
+            fi
+          fi
