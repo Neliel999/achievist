@@ -54,8 +54,10 @@ diff if upstream revives.
 
 - SemVer, starting at v1.0.0. Patch-level for carried fixes, minor for
   custom features, major for breaking changes.
-- Tags are immutable: a pushed tag is NEVER moved or deleted. Upgrades are
-  always a new tag.
+- Tags are immutable once their release artifacts exist (image published or
+  a compose fragment references the tag). A tag whose CI failed before
+  publishing anything may be deleted and re-created; after that, upgrades
+  are always a new tag.
 - Homelab consumes the image by TAG (`ghcr.io/neliel999/achievist:v1.0.0`),
   so tag immutability is a hard requirement, not a nicety.
 
