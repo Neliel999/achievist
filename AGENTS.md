@@ -69,3 +69,15 @@ diff if upstream revives.
   from the title-level endpoint, play-time sync, db repair helper, plus
   tests/test_psn.py. Supersedes PR #298 (ec346c5), whose profile route is
   refused with 403 by PSN's edge.
+
+## Agent team (omp)
+
+Project-level omp config lives in `.omp/`: agents in `.omp/agents/`
+(`achievist-lead`, `achievist-dev`, `achievist-tester`; the bundled
+`reviewer` and `security-reviewer` are used as-is), skills in
+`.omp/skills/` (`gh-issues`, `worktree-flow`, `test-loop`, `platform-sync`,
+`rebase-stable`, `release-prep`), model roles in `.omp/config.yml`.
+Workstation facts the skills encode: `gh` and `python3.12` live in the
+`dev-gh` toolbox (`toolbox run -c dev-gh ...`); node/npm are not installed
+locally (frontend tests run in CI); the fork has issues disabled, so intake
+is PRs on Neliel999/achievist plus issues/PRs on mayberts/achievist.
