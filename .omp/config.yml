@@ -4,6 +4,7 @@
 modelRoles:
   lead: "mistral/mistral-large-4-0:high"
   dev: "mistral/mistral-large-4-0:high"
-  # The tester's job is rigid-schema reporting, so it runs at low effort;
-  # point this at a cheaper/flash model when one is provisioned.
-  test: "mistral/mistral-large-4-0:low"
+  # The tester's job is rigid-schema reporting, so it runs on the cheapest
+  # model the mistral provider serves: DeepSeek V4.1 Flash 1017, hosted on
+  # La Plateforme (verified in the public model catalog, 2026-11-10).
+  test: "mistral/deepseek-v4-1-flash-1017"
