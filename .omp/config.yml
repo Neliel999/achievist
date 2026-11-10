@@ -1,10 +1,20 @@
 # Achievist fork agent team — model routing.
 # Roles are referenced as @lead / @dev / @test in .omp/agents/*.md frontmatter.
 # Project-layer model roles: re-tier an agent by editing one line here.
+# Policy (2026-11-10): only the orchestrator (lead) runs on mistral-large-4;
+# every worker/subagent runs on DeepSeek V4.1 Flash 1017 (mistral-hosted) to
+# keep fan-outs cheap. If a worker's output quality regresses, bump its role
+# back up here — one line.
 modelRoles:
   lead: "mistral/mistral-large-4-0:high"
-  dev: "mistral/mistral-large-4-0:high"
-  # The tester's job is rigid-schema reporting, so it runs on the cheapest
-  # model the mistral provider serves: DeepSeek V4.1 Flash 1017, hosted on
-  # La Plateforme (verified in the public model catalog, 2026-11-10).
+  dev: "mistral/deepseek-v4-1-flash-1017"
   test: "mistral/deepseek-v4-1-flash-1017"
+# Bundled agents (task/scout/sonic/reviewer/security-reviewer) have no project
+# frontmatter of ours, so route them to the flash roles here.
+task:
+  agentModelOverrides:
+    task: "@dev"
+    scout: "@test"
+    sonic: "@test"
+    reviewer: "@test"
+    security-reviewer: "@test"
