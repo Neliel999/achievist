@@ -17,12 +17,14 @@ podman run --rm -d --name achievist-test-pg \
   -p 5433:5432 postgres:16-alpine
 podman exec achievist-test-pg pg_isready -U postgres   # wait until accepting
 
-# Python 3.12 venv in /tmp (never inside the repo)
-toolbox run -c dev-gh python3.12 -m venv /tmp/achievist-venv-test
-/tmp/achievist-venv-test/bin/pip install -r requirements-dev.txt
+# Python 3.12 venv in /tmp (never inside the repo). Create AND run it inside
+# the dev-gh toolbox: the venv python needs libpython3.12.so.1.0 from the
+# toolbox (verified 2026-11-10: host execution fails to start).
+toolbox run -c dev-gh python3.12 -m venv /tmp/achievist-venv-test --copies
+toolbox run -c dev-gh /tmp/achievist-venv-test/bin/pip install -r requirements-dev.txt
 
-# run from the repo root
-TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/pantheon_test \
+# run from the repo root, inside the toolbox
+toolbox run -c dev-gh env TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/pantheon_test \
 REQUIRE_DB_TESTS=1 /tmp/achievist-venv-test/bin/pytest -q
 ```
 - `REQUIRE_DB_TESTS=1` turns a missing/unreachable DB into a hard FAILURE
