@@ -186,6 +186,12 @@ export const api = {
       `/api/sgdb-set?platform_game_id=${platformGameId}&url=${encodeURIComponent(url)}`,
       "POST",
     ),
+  // Per-game art overrides (cover | portrait | icon); empty url resets
+  artSet: (platformGameId: number, field: "cover" | "portrait" | "icon", url: string) =>
+    send<{ status: string }>(
+      `/api/art-set?platform_game_id=${platformGameId}&field=${field}&url=${encodeURIComponent(url)}`,
+      "POST",
+    ),
   sgdbRefresh: (force: boolean) =>
     send<{ status: string }>(`/api/sgdb-refresh?force=${force}`, "POST"),
   hltbRefresh: () => send<{ status: string }>("/api/hltb-refresh", "POST"),

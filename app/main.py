@@ -870,10 +870,10 @@ async def games(
                 pg.platform,
                 pg.platform_app_id,
                 CASE WHEN pg.platform = 'ubisoft' THEN COALESCE(ig.name, pg.name) ELSE pg.name END AS name,
-                pg.icon_url,
+                COALESCE(pg.icon_url_override, pg.icon_url) AS icon_url,
                 pg.store_id,
                 pg.sgdb_cover_url,
-                ig.cover_url        AS igdb_cover_url,
+                COALESCE(pg.portrait_cover_url, ig.cover_url) AS igdb_cover_url,
                 ug.playtime_minutes,
                 ug.earned_achievements,
                 ug.total_achievements,
@@ -972,7 +972,7 @@ async def achievements_search(
                 a.platform_ach_id, a.name, a.description, a.icon_url, a.points, a.rarity_pct,
                 ua.unlocked, ua.unlocked_at,
                 pg.id AS platform_game_id, pg.name AS game_name, pg.platform,
-                pg.sgdb_cover_url, pg.icon_url AS game_icon_url
+                pg.sgdb_cover_url, COALESCE(pg.icon_url_override, pg.icon_url) AS game_icon_url
             FROM achievements a
             JOIN platform_games pg ON pg.id = a.platform_game_id
             JOIN user_games ug ON ug.platform_game_id = pg.id
@@ -1005,14 +1005,14 @@ async def game_detail(platform_game_id: int, user: dict = Depends(require_user))
                 pg.platform,
                 pg.platform_app_id,
                 CASE WHEN pg.platform = 'ubisoft' THEN COALESCE(ig.name, pg.name) ELSE pg.name END AS name,
-                pg.icon_url,
+                COALESCE(pg.icon_url_override, pg.icon_url) AS icon_url,
                 pg.store_id,
                 pg.sgdb_cover_url,
                 pg.guide_url,
                 pg.hltb_main,
                 pg.hltb_extra,
                 pg.hltb_complete,
-                ig.cover_url        AS igdb_cover_url,
+                COALESCE(pg.portrait_cover_url, ig.cover_url) AS igdb_cover_url,
                 ug.linked_account_id,
                 ug.playtime_minutes,
                 ug.earned_achievements,
@@ -1432,7 +1432,7 @@ async def milestones(user: dict = Depends(require_user)):
                     SELECT pg.id            AS platform_game_id,
                            pg.name          AS game_name,
                            pg.platform      AS platform,
-                           pg.icon_url      AS icon_url,
+                           COALESCE(pg.icon_url_override, pg.icon_url) AS icon_url,
                            MAX(ua.unlocked_at) AS reached_at
                     FROM user_games ug
                     JOIN platform_games pg ON pg.id = ug.platform_game_id
@@ -1630,7 +1630,7 @@ async def activity(user: dict = Depends(require_user)):
             conn,
             """
             SELECT pg.id AS platform_game_id, pg.name, pg.platform,
-                   pg.icon_url, pg.sgdb_cover_url, ig.cover_url AS igdb_cover_url,
+                   COALESCE(pg.icon_url_override, pg.icon_url) AS icon_url, pg.sgdb_cover_url, COALESCE(pg.portrait_cover_url, ig.cover_url) AS igdb_cover_url,
                    ua.unlocked_at::date AS day,
                    COUNT(*) AS cnt,
                    (array_remove(array_agg(a.icon_url ORDER BY ua.unlocked_at DESC), NULL))[1:6] AS icons
@@ -1696,8 +1696,8 @@ async def statistics_platform(platform: str, user: dict = Depends(require_user))
             """
             SELECT pg.id AS platform_game_id,
                    CASE WHEN pg.platform = 'ubisoft' THEN COALESCE(ig.name, pg.name) ELSE pg.name END AS name,
-                   pg.icon_url,
-                   ig.cover_url AS igdb_cover_url, pg.platform_app_id,
+                   COALESCE(pg.icon_url_override, pg.icon_url) AS icon_url,
+                   COALESCE(pg.portrait_cover_url, ig.cover_url) AS igdb_cover_url, pg.platform_app_id,
                    ug.earned_achievements, ug.total_achievements, ug.completion_pct
             FROM user_games ug
             JOIN platform_games pg ON pg.id = ug.platform_game_id
@@ -2231,7 +2231,8 @@ async def sgdb_refresh(force: bool = False, *, admin: dict = Depends(require_adm
 
 
 async def _sgdb_art_for(client, headers: dict, base: str, game_id: int) -> dict:
-    """Fetch both Heroes (no logo, preferred) and Grids (may include a logo) for a game."""
+    """Fetch all SGDB asset classes for a game: Heroes + Grids (landscape covers),
+    vertical Grids 600x900 (portrait thumbs) and Icons (square game icons)."""
     heroes: list[str] = []
     hr = await client.get(f"{base}/heroes/game/{game_id}", headers=headers, params={"limit": 8})
     if hr.status_code == 200 and hr.json().get("data"):
@@ -2246,15 +2247,31 @@ async def _sgdb_art_for(client, headers: dict, base: str, game_id: int) -> dict:
         )
         if gr.status_code == 200 and gr.json().get("data"):
             grids.extend(g["url"] for g in gr.json()["data"])
-    return {"heroes": heroes, "grids": grids}
+
+    verticals: list[str] = []
+    vr = await client.get(
+        f"{base}/grids/game/{game_id}",
+        headers=headers,
+        params={"dimensions": "600x900", "limit": 6},
+    )
+    if vr.status_code == 200 and vr.json().get("data"):
+        verticals = [g["url"] for g in vr.json()["data"]]
+
+    icons: list[str] = []
+    ir = await client.get(f"{base}/icons/game/{game_id}", headers=headers, params={"limit": 8})
+    if ir.status_code == 200 and ir.json().get("data"):
+        icons = [i["url"] for i in ir.json()["data"]]
+
+    return {"heroes": heroes, "grids": grids, "verticals": verticals, "icons": icons}
 
 
 @app.get("/api/sgdb-search")
 async def sgdb_search(q: str, _user: dict = Depends(require_user)):
     """
-    Search SteamGridDB by name or numeric game ID. Returns both Heroes (wide
-    banner art with no logo baked in — the best fit for our full-bleed cards)
-    and Grids (may include the game's logo) so the user can pick either.
+    Search SteamGridDB by name or numeric game ID. Returns Heroes (wide banner
+    art, no logo — best for full-bleed covers), landscape Grids, vertical
+    600x900 Grids (portrait thumbs) and Icons (square game icons), so the UI
+    can offer per-field art pickers.
     """
     if not config.SGDB_API_KEY:
         return {"error": "SGDB not configured"}
@@ -2285,6 +2302,22 @@ async def sgdb_set(platform_game_id: int, url: str, _user: dict = Depends(requir
     pool = await db.get_pool()
     async with pool.connection() as conn:
         await db.set_sgdb_cover(conn, platform_game_id, url)
+    return {"status": "ok"}
+
+
+@app.post("/api/art-set")
+async def art_set(platform_game_id: int, field: str, url: str, _user: dict = Depends(require_user)):
+    """
+    Set or reset a per-game art override: field is 'cover', 'portrait' or 'icon'.
+    An empty url resets to the automatic default (cover keeps the historic ''
+    marker; portrait/icon store NULL so the COALESCE read fallback applies).
+    Same pattern as /api/sgdb-set, generalized to all three art fields.
+    """
+    if field not in db.ART_FIELDS:
+        raise HTTPException(status_code=400, detail="field must be 'cover', 'portrait' or 'icon'")
+    pool = await db.get_pool()
+    async with pool.connection() as conn:
+        await db.set_game_art(conn, platform_game_id, field, url)
     return {"status": "ok"}
 
 

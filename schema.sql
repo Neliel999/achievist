@@ -103,6 +103,11 @@ ALTER TABLE platform_games ADD COLUMN IF NOT EXISTS igdb_id       BIGINT REFEREN
 ALTER TABLE platform_games ADD COLUMN IF NOT EXISTS store_id      TEXT;
 ALTER TABLE platform_games ADD COLUMN IF NOT EXISTS xbox_pfn      TEXT;
 ALTER TABLE platform_games ADD COLUMN IF NOT EXISTS sgdb_cover_url TEXT;
+-- Manual per-game art overrides, set from the UI via /api/art-set. portrait_cover_url
+-- overrides the IGDB join (igdb_games.cover_url) and icon_url_override the synced
+-- icon_url; both are read through COALESCE, so NULL means "automatic default".
+ALTER TABLE platform_games ADD COLUMN IF NOT EXISTS portrait_cover_url TEXT;
+ALTER TABLE platform_games ADD COLUMN IF NOT EXISTS icon_url_override TEXT;
 -- Whether this is a legacy Xbox 360 title (Xbox titleHistory's
 -- achievement.sourceVersion == 1). NULL until the next sync populates it.
 -- Locked achievements never get a row at all for a 360 title (there's no
