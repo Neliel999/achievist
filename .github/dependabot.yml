@@ -1,10 +1,31 @@
 version: 2
 updates:
-  - package-ecosystem: pip
+  # Backend Python deps (requirements.txt). NOTE: without a hashed lockfile
+  # (pip-compile --generate-hashes), Dependabot only updates the DIRECT pins;
+  # transitive deps like starlette (via fastapi) need the lockfile. Follow-up:
+  # add requirements.in + pip-compile --generate-hashes output as the lockfile.
+  - package-ecosystem: "pip"
     directory: "/"
     schedule:
-      interval: weekly
-  - package-ecosystem: github-actions
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # Frontend deps — package-lock.json is a real lockfile, so transitive
+  # coverage is complete here.
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # Dockerfile base images (node:22-slim, python:3.12-slim).
+  - package-ecosystem: "docker"
     directory: "/"
     schedule:
-      interval: weekly
+      interval: "weekly"
+
+  # Workflow action pins (actions/checkout@v4 etc. -> commit SHAs).
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
