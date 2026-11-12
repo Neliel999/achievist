@@ -179,13 +179,8 @@ export const api = {
   deleteBackup: (filename: string) =>
     send<void>(`/api/backups/${encodeURIComponent(filename)}`, "DELETE"),
 
-  // Change Cover (manual SteamGridDB override)
+  // SGDB art search (per-game art overrides below)
   sgdbSearch: (q: string) => get<SgdbSearchResponse>(`/api/sgdb-search?q=${encodeURIComponent(q)}`),
-  sgdbSet: (platformGameId: number, url: string) =>
-    send<{ status: string }>(
-      `/api/sgdb-set?platform_game_id=${platformGameId}&url=${encodeURIComponent(url)}`,
-      "POST",
-    ),
   // Per-game art overrides (cover | portrait | icon); empty url resets
   artSet: (platformGameId: number, field: "cover" | "portrait" | "icon", url: string) =>
     send<{ status: string }>(
