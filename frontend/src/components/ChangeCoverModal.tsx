@@ -25,17 +25,15 @@ function assetsFor(field: ArtField, g: SgdbSearchResult): { u: string; cls: stri
 export function ChangeCoverModal({
   gameId,
   initialQuery,
-  initialField = "cover",
   onClose,
   onChanged,
 }: {
   gameId: number;
   initialQuery: string;
-  initialField?: ArtField;
   onClose: () => void;
-  onChanged: (field: ArtField, url: string) => void;
+  onChanged: () => void;
 }) {
-  const [field, setField] = useState<ArtField>(initialField);
+  const [field, setField] = useState<ArtField>("cover");
   const [query, setQuery] = useState(initialQuery);
   const [games, setGames] = useState<SgdbSearchResult[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -89,7 +87,7 @@ export function ChangeCoverModal({
     try {
       await api.artSet(gameId, field, url);
       toast.success(`${FIELDS.find((f) => f.id === field)!.label} updated`);
-      onChanged(field, url);
+      onChanged();
       onClose();
     } catch (e) {
       toast.error(String(e instanceof Error ? e.message : e));
@@ -109,7 +107,7 @@ export function ChangeCoverModal({
     try {
       await api.artSet(gameId, field, "");
       toast.success(`${FIELDS.find((f) => f.id === field)!.label} reset to default`);
-      onChanged(field, "");
+      onChanged();
       onClose();
     } catch (e) {
       toast.error(String(e instanceof Error ? e.message : e));

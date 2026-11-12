@@ -439,18 +439,9 @@ export function GameDetailPage() {
           gameId={game.platform_game_id}
           initialQuery={game.name}
           onClose={() => setChangingCover(false)}
-          onChanged={(field, url) =>
-            setGame((prev) =>
-              prev
-                ? {
-                    ...prev,
-                    ...(field === "cover" ? { sgdb_cover_url: url || null } : {}),
-                    ...(field === "portrait" ? { igdb_cover_url: url || null } : {}),
-                    ...(field === "icon" ? { icon_url: url || null } : {}),
-                  }
-                : prev,
-            )
-          }
+          onChanged={async () => {
+            setGame(await api.gameDetail(gameId));
+          }}
         />
       )}
     </div>
