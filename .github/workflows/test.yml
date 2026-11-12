@@ -52,6 +52,23 @@ jobs:
       - run: npm run build
         working-directory: frontend
 
+  lockfiles:
+    # Recompile in place — pip-compile keeps the pins already present in the
+    # checked-out lockfiles — then fail on any diff: the committed lockfiles
+    # must match the .in files. pip-tools is pinned to the version that
+    # generated them so the output is byte-stable.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pip-tools==7.6.2
+      - run: |
+          pip-compile --generate-hashes --output-file=requirements.txt requirements.in
+          pip-compile --generate-hashes --output-file=requirements-dev.txt requirements-dev.in
+          git diff --exit-code -- requirements.txt requirements-dev.txt
+
   e2e:
     # Browser smoke tests: real layout, which jsdom cannot check. Needs the
     # whole stack — a database, a built frontend and a running server — so it

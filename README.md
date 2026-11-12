@@ -240,8 +240,8 @@ pip-compile --generate-hashes --output-file=requirements-dev.txt requirements-de
 
 Never edit the generated `.txt` files directly; installs use `--require-hashes`
 (CI and Dockerfile included), so a missing or wrong hash fails the install.
-pytest
-```
+The `lockfiles` CI job also fails if the `.txt` files are stale relative to the
+`.in` files — always recompile and commit both together.
 
 **Most of the suite needs a database.** Pure parsing/auth helpers, the
 platform-registry contract and a few DB-free API routes run with no setup, but
