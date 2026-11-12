@@ -1,10 +1,32 @@
 version: 2
 updates:
-  - package-ecosystem: pip
+  # Backend Python deps: requirements.txt is a hash-locked lockfile
+  # (pip-compile --generate-hashes output of requirements.in), so Dependabot
+  # updates direct AND transitive pins (starlette, pydantic, ...) with hashes.
+  # To change deps: edit requirements.in / requirements-dev.in, then recompile
+  # with pip-compile --generate-hashes — never edit the .txt files directly.
+  - package-ecosystem: "pip"
     directory: "/"
     schedule:
-      interval: weekly
-  - package-ecosystem: github-actions
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # Frontend deps — package-lock.json is a real lockfile, so transitive
+  # coverage is complete here.
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # Dockerfile base images (node:22-slim, python:3.12-slim).
+  - package-ecosystem: "docker"
     directory: "/"
     schedule:
-      interval: weekly
+      interval: "weekly"
+
+  # Workflow action pins (actions/checkout@v4 etc. -> commit SHAs).
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

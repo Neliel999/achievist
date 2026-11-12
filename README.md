@@ -223,9 +223,25 @@ The frontend is a full SPA; these are the main endpoints it talks to (see `app/m
 ### Backend tests
 
 ```bash
-pip install -r requirements-dev.txt
+pip install --require-hashes -r requirements-dev.txt
 pytest
 ```
+
+`requirements.txt` / `requirements-dev.txt` are hash-locked lockfiles generated
+by [pip-tools](https://github.com/jazzband/pip-tools) from `requirements.in` /
+`requirements-dev.in`. To add or bump a dependency, edit the `.in` file and
+recompile:
+
+```bash
+pip install pip-tools
+pip-compile --generate-hashes --output-file=requirements.txt requirements.in
+pip-compile --generate-hashes --output-file=requirements-dev.txt requirements-dev.in
+```
+
+Never edit the generated `.txt` files directly; installs use `--require-hashes`
+(CI and Dockerfile included), so a missing or wrong hash fails the install.
+The `lockfiles` CI job also fails if the `.txt` files are stale relative to the
+`.in` files — always recompile and commit both together.
 
 **Most of the suite needs a database.** Pure parsing/auth helpers, the
 platform-registry contract and a few DB-free API routes run with no setup, but
