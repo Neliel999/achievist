@@ -1,0 +1,50 @@
+# Beta tier deploy: run a beta stack side-by-side with a stable install.
+# Shares nothing with prod (separate db name, volumes, port).
+# Pin a specific beta with IMAGE_TAG=v1.1.0-beta.1; omit to track :beta.
+# First run on the host (once), to allow pulling a private package:
+#   echo <PAT_with_read:packages> | docker login ghcr.io -u <youruser> --password-stdin
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: achievist_beta
+      POSTGRES_PASSWORD: achievist_beta
+      POSTGRES_DB: achievist_beta
+    volumes:
+      - /mnt/user/appdata/achievist-beta/pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U achievist_beta"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  app:
+    image: ghcr.io/${GHCR_OWNER:-neliel999}/achievist:${IMAGE_TAG:-beta}
+    pull_policy: always
+    environment:
+      DATABASE_URL: postgresql://achievist_beta:achievist_beta@db:5432/achievist_beta
+      # App-level enrichment keys (optional). Gaming accounts are managed in
+      # the web UI under Accounts and stored in the database, not here.
+      IGDB_CLIENT_ID: ${IGDB_CLIENT_ID:-}
+      IGDB_CLIENT_SECRET: ${IGDB_CLIENT_SECRET:-}
+      SGDB_API_KEY: ${SGDB_API_KEY:-}
+      # Optional: enables exact per-achievement TrueAchievements/
+      # TrueSteamAchievements guide links (see app/platforms/
+      # trueachievements.py for setup details). Without these, achievement
+      # guide links still work via a best-effort guessed game-page link.
+      GOOGLE_SEARCH_API_KEY: ${GOOGLE_SEARCH_API_KEY:-}
+      GOOGLE_SEARCH_ENGINE_ID: ${GOOGLE_SEARCH_ENGINE_ID:-}
+      SYNC_INTERVAL_HOURS: ${SYNC_INTERVAL_HOURS:-12}
+      REQUEST_DELAY_SECONDS: ${REQUEST_DELAY_SECONDS:-0.4}
+      BACKUP_KEEP_COUNT: ${BACKUP_KEEP_COUNT:-14}
+      BACKUP_INTERVAL_HOURS: ${BACKUP_INTERVAL_HOURS:-24}
+    volumes:
+      - /mnt/user/appdata/achievist-beta/data:/data
+      - /mnt/user/appdata/achievist-beta/backups:/backups
+    ports:
+      - "8745:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
