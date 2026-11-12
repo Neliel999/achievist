@@ -239,7 +239,7 @@ export function GameDetailPage() {
                     onClick={() => setChangingCover(true)}
                     className="ml-auto inline-flex items-center gap-1 rounded-lg border border-line bg-ink-800/80 px-2 py-1 text-xs text-slate-200 transition hover:bg-ink-700"
                   >
-                    <ImageUp size={12} /> Change Cover
+                    <ImageUp size={12} /> Change Art
                   </button>
                 )}
               </div>
@@ -439,7 +439,9 @@ export function GameDetailPage() {
           gameId={game.platform_game_id}
           initialQuery={game.name}
           onClose={() => setChangingCover(false)}
-          onChanged={(url) => setGame((prev) => (prev ? { ...prev, sgdb_cover_url: url || null } : prev))}
+          onChanged={async () => {
+            setGame(await api.gameDetail(gameId));
+          }}
         />
       )}
     </div>

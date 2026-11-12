@@ -169,6 +169,8 @@ export interface SgdbSearchResult {
   name: string;
   heroes: string[];
   grids: string[];
+  verticals: string[];
+  icons: string[];
 }
 
 export interface SgdbSearchResponse {

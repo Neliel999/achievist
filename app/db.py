@@ -294,7 +294,7 @@ async def get_shared_games(conn, requesting_user_id: int, platform: str | None =
             pg.id AS platform_game_id,
             pg.platform,
             pg.name,
-            pg.icon_url,
+            COALESCE(pg.icon_url_override, pg.icon_url) AS icon_url,
             pg.sgdb_cover_url,
             MAX(pug.last_played_at) AS last_activity,
             json_agg(
@@ -331,7 +331,7 @@ async def get_game_comparison(conn, requesting_user_id: int, platform_game_id: i
     """
     game = await _fetchrow(
         conn,
-        "SELECT id, platform, name, icon_url, sgdb_cover_url, guide_url FROM platform_games WHERE id = %s",
+        "SELECT id, platform, name, COALESCE(icon_url_override, icon_url) AS icon_url, sgdb_cover_url, guide_url FROM platform_games WHERE id = %s",
         platform_game_id,
     )
     if not game:
@@ -843,6 +843,30 @@ async def set_sgdb_cover(conn, platform_game_id: int, cover_url: str) -> None:
         "UPDATE platform_games SET sgdb_cover_url = %s WHERE id = %s",
         (cover_url, platform_game_id),
     )
+
+# Per-game art override fields accepted by set_game_art / POST /api/art-set.
+# cover maps onto the existing sgdb_cover_url column ('' is the historic reset
+# marker); portrait/icon are the new override columns (NULL = automatic default,
+# read via COALESCE in the game queries).
+ART_FIELDS = ("cover", "portrait", "icon")
+_ART_COLUMNS = {
+    "cover": "sgdb_cover_url",
+    "portrait": "portrait_cover_url",
+    "icon": "icon_url_override",
+}
+
+
+async def set_game_art(conn, platform_game_id: int, field: str, url: str) -> int | None:
+    """Set a per-game art URL override; url='' resets to the automatic default.
+    Returns the game id, or None if platform_game_id does not exist."""
+    column = _ART_COLUMNS[field]
+    value = url if (field == "cover" or url) else None
+    row = await _fetchrow(
+        conn,
+        f"UPDATE platform_games SET {column} = %s WHERE id = %s RETURNING id",
+        value, platform_game_id,
+    )
+    return row["id"] if row else None
 
 
 async def set_store_id(conn, platform_game_id: int, store_id: str) -> None:
