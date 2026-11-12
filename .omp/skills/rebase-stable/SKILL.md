@@ -21,4 +21,7 @@ git checkout stable && git rebase main
 - Report the resulting patch set BEFORE any push:
   `git log origin/main..stable --oneline` and `git diff origin/main...stable --stat`.
 - Current carried patch: ac51b66 (PSN sync fix, supersedes upstream PR #298).
+- Branch protection makes stable PR-only, but this procedure is the sanctioned
+  exception: after the rebase, push stable with `git push --force-with-lease
+  origin stable` (still ask-gated — prepare, the user approves and runs it).
 - Pushes are ask-gated: prepare, report, stop. The user approves.

@@ -24,7 +24,11 @@ diff if upstream revives.
   (`fix(psn): ...`). Never squash divergent changes into one commit.
 - Git add/commit only in worktrees; `git push` (any branch, any tag) is
   ask-gated: prepare everything, then request approval.
-- After a topic branch merges into stable, delete the branch locally and on
+- stable is PR-ONLY: every change lands via a pull request (base stable) with
+  green required checks (backend, frontend, e2e) and one approving review —
+  never merge into stable locally. Enforced by branch protection on
+  origin/stable. Sole force-push exception: the rebase-stable procedure.
+- After a topic PR merges into stable, delete the branch locally and on
   origin. Merged branches must not linger.
 - Rebase procedure when upstream moves: fetch upstream, fast-forward main,
   rebase stable onto main, drop patches upstream superseded, run pytest,

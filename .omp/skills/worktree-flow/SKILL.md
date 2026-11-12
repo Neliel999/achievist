@@ -14,5 +14,8 @@ From AGENTS.md (canonical):
   `ci(...):`, `docs(...):`). Never squash divergent changes into one commit.
 - Push (any branch, any tag) is ASK-GATED: agents prepare the branch/commit
   and report; only the user approves and runs the push.
-- After a topic branch merges into stable, delete it locally and on origin.
+- Topic branches are opened as PRs against stable (base stable); the user
+  reviews and merges on GitHub. stable is PR-only — branch protection on
+  origin/stable blocks direct pushes and local merges. After the PR merges,
+  delete the branch locally and on origin.
 - When upstream moves, use the `rebase-stable` skill instead of merging.
