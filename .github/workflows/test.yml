@@ -89,7 +89,16 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('requirements-dev.txt') }}
-      - run: playwright install --with-deps chromium
+      # --with-deps runs apt on every run (even on browser-cache hit) and the
+      # Ubuntu archive mirrors flake on hosted runners — retry before failing.
+      - name: Install Playwright chromium + OS deps
+        run: |
+          for attempt in 1 2 3; do
+            playwright install --with-deps chromium && break
+            [ "$attempt" -eq 3 ] && exit 1
+            echo "playwright install attempt $attempt failed; retrying in 20s" >&2
+            sleep 20
+          done
       - run: npm ci
         working-directory: frontend
       # the tests drive the real app, which serves this build
