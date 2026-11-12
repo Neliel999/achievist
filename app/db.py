@@ -856,14 +856,17 @@ _ART_COLUMNS = {
 }
 
 
-async def set_game_art(conn, platform_game_id: int, field: str, url: str) -> None:
-    """Set a per-game art URL override; url='' resets to the automatic default."""
+async def set_game_art(conn, platform_game_id: int, field: str, url: str) -> int | None:
+    """Set a per-game art URL override; url='' resets to the automatic default.
+    Returns the game id, or None if platform_game_id does not exist."""
     column = _ART_COLUMNS[field]
     value = url if (field == "cover" or url) else None
-    await conn.execute(
-        f"UPDATE platform_games SET {column} = %s WHERE id = %s",
-        (value, platform_game_id),
+    row = await _fetchrow(
+        conn,
+        f"UPDATE platform_games SET {column} = %s WHERE id = %s RETURNING id",
+        value, platform_game_id,
     )
+    return row["id"] if row else None
 
 
 async def set_store_id(conn, platform_game_id: int, store_id: str) -> None:

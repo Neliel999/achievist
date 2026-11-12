@@ -2315,9 +2315,13 @@ async def art_set(platform_game_id: int, field: str, url: str, _user: dict = Dep
     """
     if field not in db.ART_FIELDS:
         raise HTTPException(status_code=400, detail="field must be 'cover', 'portrait' or 'icon'")
+    if url and not url.lower().startswith(("http://", "https://")):
+        raise HTTPException(status_code=400, detail="url must be empty (reset) or an http(s) URL")
     pool = await db.get_pool()
     async with pool.connection() as conn:
-        await db.set_game_art(conn, platform_game_id, field, url)
+        game_id = await db.set_game_art(conn, platform_game_id, field, url)
+    if game_id is None:
+        raise HTTPException(status_code=404, detail="game not found")
     return {"status": "ok"}
 
 
