@@ -1,9 +1,10 @@
 version: 2
 updates:
-  # Backend Python deps (requirements.txt). NOTE: without a hashed lockfile
-  # (pip-compile --generate-hashes), Dependabot only updates the DIRECT pins;
-  # transitive deps like starlette (via fastapi) need the lockfile. Follow-up:
-  # add requirements.in + pip-compile --generate-hashes output as the lockfile.
+  # Backend Python deps: requirements.txt is a hash-locked lockfile
+  # (pip-compile --generate-hashes output of requirements.in), so Dependabot
+  # updates direct AND transitive pins (starlette, pydantic, ...) with hashes.
+  # To change deps: edit requirements.in / requirements-dev.in, then recompile
+  # with pip-compile --generate-hashes — never edit the .txt files directly.
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
