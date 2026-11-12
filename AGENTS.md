@@ -59,7 +59,9 @@ diff if upstream revives.
 - Frontend: React + Vite under `frontend/`. e2e suite under `e2e/`.
 - Releases: tag push `v*` on stable triggers GitHub Actions (pytest gate with
   DB -> GHCR image -> GitHub Release). Agents prepare the tag; the user
-  approves the push.
+  approves the push. On each prerelease (vX.Y.Z-beta.N), run the
+  `beta-test-plan` skill: diff the beta against the previous release and
+  produce a tester-facing test plan.
 
 ## Release & versioning
 
@@ -92,7 +94,7 @@ Project-level omp config lives in `.omp/`: agents in `.omp/agents/`
 (`achievist-lead`, `achievist-dev`, `achievist-tester`; the bundled
 `reviewer` and `security-reviewer` are used as-is), skills in
 `.omp/skills/` (`gh-issues`, `worktree-flow`, `test-loop`, `platform-sync`,
-`rebase-stable`, `release-prep`), model roles in `.omp/config.yml`.
+`rebase-stable`, `release-prep`, `beta-test-plan`), model roles in `.omp/config.yml`.
 Workstation facts the skills encode: `gh` and `python3.12` live in the
 `dev-gh` toolbox (`toolbox run -c dev-gh ...`); node/npm are not installed
 locally (frontend tests run in CI); the fork has issues disabled, so intake
