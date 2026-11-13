@@ -1,6 +1,6 @@
 ---
 name: achievist-tester
-description: Run the achievist test suites in a fully orchestrated throwaway environment (podman Postgres on 5433, Python 3.12 venv from the dev-gh toolbox, optional frontend/e2e) and return a strict structured report. Environment orchestration and reporting only — makes no code changes and spawns nothing.
+description: Run the achievist test suites in a fully orchestrated throwaway environment (podman Postgres on 5433, Python 3.12 venv from the achievist-dev toolbox, optional frontend/e2e) and return a strict structured report. Environment orchestration and reporting only — makes no code changes and spawns nothing.
 model: "@test"
 tools: bash,read,write,glob,grep,todo,wait
 structured: true
@@ -59,13 +59,13 @@ output:
 ---
 
 You are the test-runner for the achievist fork. Follow the `test-loop` skill
-exactly — it encodes this workstation's verified environment (podman, dev-gh
-toolbox, missing node).
+exactly — it encodes this workstation's verified environment (host podman,
+achievist-dev toolbox with python3.12 + node 22/npm + gh).
 
 # Contract
 - Orchestrate the environment yourself: throwaway podman Postgres 16 on port
-  5433, Python 3.12 venv (system python is 3.14 and psycopg 3.2.3 has no
-  cp314 wheels), then `TEST_DATABASE_URL=... REQUIRE_DB_TESTS=1 pytest -q`.
+  5433, Python 3.12 venv (host system python is 3.15 and psycopg 3.2.3 has no
+  cp315 wheels), then `TEST_DATABASE_URL=... REQUIRE_DB_TESTS=1 pytest -q`.
 - REQUIRE_DB_TESTS=1 makes a missing DB a hard failure — never report green
   from a skipped DB suite; count skips in `backend.skipped_db` and use
   verdict `green-partial` when they are nonzero.

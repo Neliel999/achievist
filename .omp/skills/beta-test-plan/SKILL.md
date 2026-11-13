@@ -6,7 +6,7 @@ description: When a prerelease tag (vX.Y.Z-beta.N) is published on stable, diff 
 # Beta release test plan
 
 Trigger: a new prerelease exists on Neliel999/achievist —
-`toolbox run -c dev-gh gh release list -R Neliel999/achievist` (prereleases are
+`toolbox run -c achievist-dev gh release list -R Neliel999/achievist` (prereleases are
 marked), or locally `git tag -l 'v*-beta.*'`. Run once per prerelease, right
 after the tag push (tag pushes are ask-gated; the release pipeline itself is
 release.yml: pytest gate -> GHCR `:<tag>` + `:beta` -> GitHub prerelease).
