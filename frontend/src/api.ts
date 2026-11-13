@@ -173,6 +173,16 @@ export const api = {
   psnServiceTicket: (npsso: string) =>
     send<{ status: string }>("/api/psn-service-ticket", "POST", { npsso }),
 
+  // GOG sign-in: paste-the-code flow (GOG's public Galaxy client has a fixed
+  // redirect_uri, so the user copies ?code=... from GOG's on_login_success page)
+  gogSetup: () => get<{ authorize_url: string }>("/api/gog-setup"),
+  gogSubmitCode: (code: string) =>
+    send<{ status: string; id: number; external_id: string; username?: string | null }>(
+      "/api/gog-setup",
+      "POST",
+      { code },
+    ),
+
   // Backups
   backups: () => get<BackupsResponse>("/api/backups"),
   createBackup: () => send<{ filename: string }>("/api/backups", "POST"),

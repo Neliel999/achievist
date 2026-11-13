@@ -13,6 +13,17 @@ RA_TARGET_USER = os.getenv("RA_TARGET_USER", "") or RA_USERNAME
 XBOX_CLIENT_ID = os.getenv("XBOX_CLIENT_ID", "")
 XBOX_REFRESH_TOKEN = os.getenv("XBOX_REFRESH_TOKEN", "")
 
+# GOG "Galaxy client" OAuth app — effectively public (hardcoded in
+# lgogdownloader, Minigalaxy, Heroic and other open-source GOG clients; stable
+# for 10+ years). Used for the per-user login flow in app/gog_auth.py.
+# Read-only API access (library + achievements) needs no per-game secrets;
+# those are only required for writes, which achievist never performs.
+GOG_CLIENT_ID = os.getenv("GOG_CLIENT_ID", "46899977096215655")
+GOG_CLIENT_SECRET = os.getenv(
+    "GOG_CLIENT_SECRET",
+    "9d85c43b1482497dbbce61f6e4aa173a433796eeae2ca8c5f6129f2dc4de46d9",
+)
+
 # Whether the session cookie carries the Secure flag, which stops the browser
 # ever sending it over plain http.
 #

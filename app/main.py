@@ -2464,6 +2464,7 @@ def _redact_account(row: dict) -> dict:
     secret_fields = set()
     if platform_cls:
         secret_fields = {f["name"] for f in platform_cls.CONNECT_FIELDS if f.get("secret")}
+        secret_fields |= set(getattr(platform_cls, "SECRET_CRED_KEYS", ()))
     creds = row.get("credentials") or {}
     safe_creds = {
         k: ("••••••" if k in secret_fields and v else v)
@@ -2716,6 +2717,48 @@ async def xbox_setup_poll(device_code: str, _user: dict = Depends(require_user))
         "message": "Xbox authenticated successfully. The refresh token has been saved. Run a sync to import your games.",
         "env_hint": f"You can also set XBOX_REFRESH_TOKEN={refresh_token} in your .env for persistence across container recreations.",
     }
+
+
+@app.get("/api/gog-setup")
+async def gog_setup(_user: dict = Depends(require_user)):
+    """
+    Start GOG sign-in: returns the GOG authorize URL to open in a browser.
+
+    GOG's public Galaxy client has a fixed redirect_uri
+    (embed.gog.com/on_login_success?origin=client) and no device-code flow, so
+    after logging in the user lands on a GOG page whose URL contains ?code=...
+    — they paste that code/URL back via POST /api/gog-setup.
+    """
+    from app import gog_auth
+    return {"authorize_url": gog_auth.authorize_url()}
+
+
+@app.post("/api/gog-setup")
+async def gog_setup_submit(payload: dict, user: dict = Depends(require_user)):
+    """
+    Exchange a pasted GOG authorization code for tokens and connect the account.
+    Body: {"code": "<code or full on_login_success URL>"}
+    The account is keyed by the numeric GOG user id; tokens are stored in its
+    credentials JSON (masked in API responses via SECRET_CRED_KEYS).
+    """
+    from app import gog_auth
+    try:
+        code = gog_auth.extract_code(payload.get("code") or "")
+        tokens = await gog_auth.exchange_code(code)
+    except RuntimeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    user_id = str(tokens.get("user_id") or "")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="GOG token response had no user_id")
+    creds = gog_auth.creds_from_token_response(tokens)
+    user_data = await gog_auth.fetch_user_data(creds["access_token"])
+    username = user_data.get("username") or None
+    pool = await db.get_pool()
+    async with pool.connection() as conn:
+        await db.delete_other_accounts_for_platform(conn, user["id"], "gog", user_id)
+        account_id = await db.upsert_account(conn, user["id"], "gog", user_id, creds, display_name=username)
+        await conn.commit()
+    return {"status": "connected", "id": account_id, "external_id": user_id, "username": username}
 
 
 @app.get("/api/xbox-360-debug")
