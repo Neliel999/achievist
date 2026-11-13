@@ -13,9 +13,12 @@ From AGENTS.md:
   immutable — upgrades are always a NEW tag. A tag whose CI failed before
   publishing anything may be deleted and re-created.
 - `v*` tag push on stable triggers `.github/workflows/release.yml`:
-  pytest gate (DB-backed) → GHCR image (`:<tag>` + `:stable`) → GitHub Release.
-- Agents PREPARE the tag: `git tag vX.Y.Z stable` (after the test loop is
-  green), then STOP. The push is ask-gated — the user approves it.
+  pytest gate (DB-backed) → GHCR image (`:<tag>` + channel tag) → GitHub Release.
+  Final tags (`vX.Y.Z`) push `:stable` and publish a full release; prerelease
+  tags (`vX.Y.Z-beta.N`) push `:beta` and publish a GitHub prerelease.
+- Agents PREPARE the tag: `git tag vX.Y.Z stable` (beta: `git tag
+  vX.Y.Z-beta.N stable`) after the test loop is green, then STOP. The push is
+  ask-gated — the user approves it.
 - Changelog: release notes are generated from commits since the last tag
   (`softprops/action-gh-release`), so keep commits conventional — they become
   the release notes.

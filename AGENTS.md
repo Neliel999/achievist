@@ -72,6 +72,11 @@ diff if upstream revives.
 - Homelab consumes the image by TAG (`ghcr.io/neliel999/achievist:v1.0.0`),
   so tag immutability is a hard requirement, not a nicety.
 
+- Beta channel: prerelease tags `vX.Y.Z-beta.N` on stable run the same gated
+  release pipeline but push `:beta` (never `:stable`) and create a GitHub
+  prerelease. Testers deploy side-by-side with `docker-compose.ghcr-beta.yml`
+  (`IMAGE_TAG=v1.1.0-beta.N` pins a beta; default `:beta` tracks the latest).
+
 ## Current patch set
 
 - `0677d31` cherry-picked as ac51b66 (from fernando/fix-psn-profile-lookup,

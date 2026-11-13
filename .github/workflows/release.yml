@@ -48,6 +48,18 @@ jobs:
       # GHCR requires the repository path to be lowercase; GITHUB_REPOSITORY_OWNER may contain capitals.
       - name: Compute lowercase image name
         run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/achievist" >> "$GITHUB_ENV"
+      # SemVer prerelease tags (a '-' in the ref, e.g. v1.1.0-beta.1) go to the
+      # :beta channel and are published as GitHub prereleases; final tags move
+      # :stable and publish a full release.
+      - name: Detect prerelease tag
+        run: |
+          if [[ "${{ github.ref_name }}" == *-* ]]; then
+            echo "CHANNEL=beta" >> "$GITHUB_ENV"
+            echo "PRERELEASE=true" >> "$GITHUB_ENV"
+          else
+            echo "CHANNEL=stable" >> "$GITHUB_ENV"
+            echo "PRERELEASE=false" >> "$GITHUB_ENV"
+          fi
       # Docker Hub intermittently returns "malformed HTTP Authorization header" on
       # anonymous base-image pulls from GH runners; pre-pulling makes retries cheap
       # and the failure point obvious.
@@ -68,7 +80,7 @@ jobs:
           provenance: false
           tags: |
             ${{ env.IMAGE }}:${{ github.ref_name }}
-            ${{ env.IMAGE }}:stable
+            ${{ env.IMAGE }}:${{ env.CHANNEL }}
           labels: |
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ github.ref_name }}
@@ -77,6 +89,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          prerelease: ${{ env.PRERELEASE == 'true' }}
           generate_release_notes: true
           body: |
             Fork release ${{ github.ref_name }}.
