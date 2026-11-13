@@ -14,6 +14,9 @@ class Platform(ABC):
     # otherwise a fixed EXTERNAL_ID is used.
     CONNECT_FIELDS: list[dict] = []
     EXTERNAL_ID: str | None = None  # fixed id for single-identity platforms (gw2, xbox, ubisoft)
+    # Credential keys masked in /api/accounts responses even when
+    # CONNECT_FIELDS is empty (oauth platforms store tokens in credentials JSON).
+    SECRET_CRED_KEYS: set = set()
 
     def __init__(self):
         self._progress: dict | None = None

@@ -876,6 +876,31 @@ async def set_store_id(conn, platform_game_id: int, store_id: str) -> None:
     )
 
 
+async def get_platform_game_by_key(conn, platform: str, platform_app_id: str) -> dict | None:
+    return await _fetchrow(
+        conn,
+        "SELECT id, platform, platform_app_id, name, icon_url, total_achievements, gog_client_id "
+        "FROM platform_games WHERE platform = %s AND platform_app_id = %s",
+        platform, platform_app_id,
+    )
+
+
+async def set_gog_client_id(conn, platform_game_id: int, client_id: str) -> None:
+    """Cache the per-game GOG client id so gogdb.org is only queried on first sight."""
+    await conn.execute(
+        "UPDATE platform_games SET gog_client_id = %s WHERE id = %s",
+        (client_id, platform_game_id),
+    )
+
+
+async def set_account_credentials(conn, account_id: int, credentials: dict) -> None:
+    """Replace the stored credentials JSONB (e.g. a rotated OAuth refresh token)."""
+    await conn.execute(
+        "UPDATE linked_accounts SET credentials = %s WHERE id = %s",
+        (Jsonb(credentials), account_id),
+    )
+
+
 async def update_hltb(conn, platform_game_id: int, main: float | None, extra: float | None, complete: float | None) -> None:
     await conn.execute(
         "UPDATE platform_games SET hltb_main=%s, hltb_extra=%s, hltb_complete=%s WHERE id=%s",
@@ -894,6 +919,36 @@ async def remove_user_game(conn, linked_account_id: int, platform: str, platform
           AND pg.platform_app_id = %s
         """,
         (linked_account_id, platform, platform_app_id),
+    )
+
+
+async def repair_legacy_gog_exophase_rows(conn, linked_account_id: int) -> None:
+    """
+    Idempotent cleanup for GOG rows synced through Exophase before the direct
+    GOG API sync existed: those platform_games are keyed by the Exophase slug
+    ("dredge-gog") while the direct sync keys by numeric product id, so without
+    this the library would show every game twice. Drops this account's
+    non-numeric user_games rows, then any gog platform_games rows no user_games
+    still reference (their achievements cascade with the game row).
+    """
+    await conn.execute(
+        """
+        DELETE FROM user_games ug
+        USING platform_games pg
+        WHERE ug.platform_game_id = pg.id
+          AND ug.linked_account_id = %s
+          AND pg.platform = 'gog'
+          AND pg.platform_app_id !~ '^[0-9]+$'
+        """,
+        (linked_account_id,),
+    )
+    await conn.execute(
+        """
+        DELETE FROM platform_games pg
+        WHERE pg.platform = 'gog'
+          AND pg.platform_app_id !~ '^[0-9]+$'
+          AND NOT EXISTS (SELECT 1 FROM user_games ug WHERE ug.platform_game_id = pg.id)
+        """
     )
 
 

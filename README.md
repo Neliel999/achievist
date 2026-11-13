@@ -57,10 +57,18 @@ After that, you can also add other public gamertags as separate accounts.
 2. Accounts → Ubisoft → Connect → paste it (expires after a few hours — you'll re-paste occasionally)
 3. Add accounts by **username** (public profile required)
 
+### GOG setup
+
+1. Accounts → GOG → Connect → **Sign in with GOG** — opens GOG's login page in a new tab
+2. After signing in, GOG lands you on a page whose address contains `?code=...` — copy that whole URL (or just the code)
+3. Paste it back into achievist and connect
+
+A per-account refresh token is stored in the account, so later syncs need no re-login. (GOG has no redirect-based login for third-party servers — the public Galaxy client's redirect is fixed to a GOG page — hence the paste-a-code step.)
+
 ## Platform notes
 
 - **Ubisoft achievements are limited to legacy "Uplay units"**, not the modern achievement set Ubisoft's own apps show. Ubisoft's modern achievement API is locked to a private client ID only their desktop app holds, and their local caches are encrypted — there is no public path to full parity. Games and legacy unit progress still sync correctly.
-- **GOG is not supported.** GOG's achievement API requires a separate developer-issued secret *per game*, extracted individually from each game's files — there's no universal token, so it isn't a one-time integration.
+- **GOG syncs directly** via GOG's API after a one-time OAuth sign-in: the owned library from `embed.gog.com` and per-game achievements (full locked catalog, unlock dates, icons, rarity) from `gameplay.gog.com`. The per-game client secret is only required for *writes*, which achievist never performs.
 - **Epic Games** achievement data is fully public (no auth beyond your account ID) via Epic's Store GraphQL API.
 
 ## Accounts and sessions

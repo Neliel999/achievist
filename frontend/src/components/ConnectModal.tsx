@@ -36,6 +36,8 @@ export function ConnectModal({
           <PSNFlow schema={schema} account={account} onConnected={onConnected} />
         ) : schema.key === "xbox" ? (
           <XboxFlow schema={schema} account={account} onConnected={onConnected} />
+        ) : schema.key === "gog" ? (
+          <GOGFlow onConnected={onConnected} />
         ) : schema.auth_type === "oauth" ? (
           <OAuthFlow schema={schema} onConnected={onConnected} />
         ) : (
@@ -275,6 +277,86 @@ function XboxFlow({
       <p className="text-center text-xs text-faint">
         Connects your own account and enables gamertag lookups.
       </p>
+    </div>
+  );
+}
+
+function GOGFlow({ onConnected }: { onConnected: () => void }) {
+  const [authorizeUrl, setAuthorizeUrl] = useState<string | null>(null);
+  const [code, setCode] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function start() {
+    setError(null);
+    try {
+      const r = await api.gogSetup();
+      setAuthorizeUrl(r.authorize_url);
+    } catch (e) {
+      setError(String(e instanceof Error ? e.message : e));
+    }
+  }
+
+  async function submit() {
+    setError(null);
+    setBusy(true);
+    try {
+      await api.gogSubmitCode(code.trim());
+      onConnected();
+    } catch (e) {
+      setError(String(e instanceof Error ? e.message : e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="rounded-lg bg-ink-900 px-3 py-2 text-xs text-muted">
+        GOG has no redirect login for third-party servers, so: open GOG sign-in, log in, then copy the
+        address of the page you land on (it contains <code className="text-slate-300">?code=…</code>) and
+        paste it below.
+      </p>
+      {!authorizeUrl ? (
+        <button
+          onClick={start}
+          className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-accent/90"
+        >
+          Sign in with GOG
+        </button>
+      ) : (
+        <>
+          <a
+            href={authorizeUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="block w-full rounded-lg bg-accent px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-accent/90"
+          >
+            1. Open GOG sign-in
+          </a>
+          <div>
+            <label htmlFor="connect-gog-code" className="mb-1 block text-sm font-medium text-slate-300">
+              2. Paste the code or landing URL
+            </label>
+            <input
+              id="connect-gog-code"
+              type="text"
+              value={code}
+              placeholder="https://embed.gog.com/on_login_success?origin=client&code=…"
+              onChange={(e) => setCode(e.target.value)}
+              className="w-full rounded-lg border border-line bg-ink-900 px-3 py-2 text-sm text-slate-100 outline-none placeholder:text-faint focus:border-accent-soft"
+            />
+          </div>
+          <button
+            onClick={submit}
+            disabled={busy || !code.trim()}
+            className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-accent/90 disabled:opacity-50"
+          >
+            {busy ? "Connecting…" : "Connect"}
+          </button>
+        </>
+      )}
+      {error && <p className="rounded-lg bg-red-950/50 px-3 py-2 text-sm text-red-300">{error}</p>}
     </div>
   );
 }

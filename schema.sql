@@ -102,6 +102,10 @@ ALTER TABLE platform_games ADD COLUMN IF NOT EXISTS hltb_complete NUMERIC;
 ALTER TABLE platform_games ADD COLUMN IF NOT EXISTS igdb_id       BIGINT REFERENCES igdb_games(id);
 ALTER TABLE platform_games ADD COLUMN IF NOT EXISTS store_id      TEXT;
 ALTER TABLE platform_games ADD COLUMN IF NOT EXISTS xbox_pfn      TEXT;
+-- Cached per-game Galaxy client id (from gogdb.org build data), needed for
+-- the read-only gameplay.gog.com achievements call. The per-game client
+-- secret in the same build data stays unused (writes only).
+ALTER TABLE platform_games ADD COLUMN IF NOT EXISTS gog_client_id  TEXT;
 ALTER TABLE platform_games ADD COLUMN IF NOT EXISTS sgdb_cover_url TEXT;
 -- Manual per-game art overrides, set from the UI via /api/art-set. portrait_cover_url
 -- overrides the IGDB join (igdb_games.cover_url) and icon_url_override the synced
