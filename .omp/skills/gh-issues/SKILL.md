@@ -1,6 +1,6 @@
 ---
 name: gh-issues
-description: Read GitHub issues/PRs for the achievist fork (issues re-enabled 2026-11-10) and upstream mayberts/achievist. Host gh is a static binary at ~/.local/bin/gh; toolbox dev-gh also has gh 2.97.0.
+description: Read GitHub issues/PRs for the achievist fork (issues re-enabled 2026-11-10) and upstream mayberts/achievist. Host gh is a static binary at ~/.local/bin/gh; toolbox achievist-dev also has gh 2.97.0.
 ---
 
 # Where gh lives (verified on this workstation, 2026-11-10)
@@ -8,7 +8,7 @@ description: Read GitHub issues/PRs for the achievist fork (issues re-enabled 20
   `~/.config/gh/hosts.yml` (user Neliel999, `repo` scope). Plain `gh ...` works
   in bash; `issue://<owner>/<repo>[/<n>]` works in any omp session started after
   the install (sessions running since before it cached "gh not installed").
-- Toolbox `dev-gh` also carries gh 2.97.0 and python3.12: `toolbox run -c dev-gh ...`
+- Toolbox `achievist-dev` also carries gh 2.97.0 and python3.12: `toolbox run -c achievist-dev ...`
   (needed for the test venv; a `~/.local/bin/gh` wrapper around `toolbox run`
   HANGS from omp's process tree — do not use that pattern).
 

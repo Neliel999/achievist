@@ -320,6 +320,75 @@ docker compose up -d --build
 
 CI (`.github/workflows/test.yml`) runs three jobs on every push and PR: the backend suite against a Postgres service container, the frontend tests plus a production build, and the browser smoke tests against the whole stack.
 
+### Local dev on Fedora Kinoite (immutable host, no docker)
+
+On a Kinoite workstation the host is immutable and its system Python is too new
+for the pinned deps (psycopg 3.2.3 has no wheels past Python 3.12), so run the
+tooling in a toolbox named `achievist-dev`. Home is bind-mounted into the
+toolbox, so `~/.config/gh` credentials and `~/Projects` carry over — no re-login.
+
+Create it from scratch (fresh install or after a host migration):
+
+```bash
+toolbox create -c achievist-dev          # fedora-toolbox:<host release>
+toolbox run -c achievist-dev sudo dnf install -y \
+  gh python3.12 python3.12-devel git nodejs nodejs-npm podman podman-compose
+```
+
+Notes: do not add `python3.12-pip` (not packaged on F45; `python3.12 -m venv`
+bootstraps pip via ensurepip). F45's `nodejs` is already 22 with npm 10. For a
+reproducible image, keep `~/Containerfile.achievist-dev` and rebuild with
+`podman build -t localhost/achievist-dev -f ~/Containerfile.achievist-dev ~ &&
+toolbox create -c achievist-dev -i localhost/achievist-dev` (the Containerfile
+also wraps `/usr/bin/podman` to remote mode — see the gotcha below).
+
+Backend tests (Postgres on the host's podman, venv inside the toolbox):
+
+```bash
+podman run --rm -d --name achievist-test-pg \
+  -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=pantheon_test \
+  -p 5433:5432 postgres:16-alpine        # local port 5433; CI uses 5432
+podman exec achievist-test-pg pg_isready -U postgres
+
+toolbox run -c achievist-dev python3.12 -m venv /tmp/achievist-venv-test --copies
+toolbox run -c achievist-dev /tmp/achievist-venv-test/bin/pip install --require-hashes -r requirements-dev.txt
+toolbox run -c achievist-dev env TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/pantheon_test \
+  REQUIRE_DB_TESTS=1 /tmp/achievist-venv-test/bin/pytest -q
+podman rm -f achievist-test-pg            # teardown
+```
+
+The venv must be created AND run inside the toolbox (its python needs
+libpython3.12 from there). `REQUIRE_DB_TESTS=1` makes a missing DB a failure,
+not a skip.
+
+Frontend tests/build:
+```bash
+toolbox run -c achievist-dev bash -c 'cd frontend && npm ci && npm test && npm run build'
+```
+
+Full stack locally (instead of `docker compose`): run podman-compose from the
+toolbox against the host's podman socket — containers, volumes and the :8744
+port all land on the host:
+
+```bash
+toolbox run -c achievist-dev bash -c 'cd ~/Projects/achievist && podman-compose -f docker-compose.yml up -d --build'
+# → http://localhost:8744
+```
+
+Gotchas (verified on Kinoite 45 / podman 6.1.3): never run plain `podman` in
+local mode inside a toolbox — it shares /run/user/1000 with the host and
+deletes the host's pause/conmon pid files, which bricks the host podman service
+("unable to create a new pause process"). The achievist-dev Containerfile wraps
+`/usr/bin/podman` to `--remote --url unix:///run/user/1000/podman/podman.sock`
+so this cannot happen; on a toolbox without the wrapper use
+`CONTAINER_HOST=unix:///run/user/1000/podman/podman.sock`. Also,
+`podman-compose up -d --build` will not replace a crash-looping container after
+a rebuild — `podman rm -f <container>` on the host first. And after host
+migrations, container records can survive without their writable layers
+("container not known"): `podman rm -f <name>` on the host and recreate the
+toolbox; exclude `~/.local/share/containers/storage` from migration copies
+(containers are disposable; images survive).
+
 ## Version control and updates
 
 ### One-time: publish to GitHub
