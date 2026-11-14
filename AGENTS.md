@@ -95,7 +95,9 @@ Project-level omp config lives in `.omp/`: agents in `.omp/agents/`
 `reviewer` and `security-reviewer` are used as-is), skills in
 `.omp/skills/` (`gh-issues`, `worktree-flow`, `test-loop`, `platform-sync`,
 `rebase-stable`, `release-prep`, `beta-test-plan`), model roles in `.omp/config.yml`.
-Workstation facts the skills encode: `gh` and `python3.12` live in the
-`dev-gh` toolbox (`toolbox run -c dev-gh ...`); node/npm are not installed
-locally (frontend tests run in CI); the fork has issues disabled, so intake
-is PRs on Neliel999/achievist plus issues/PRs on mayberts/achievist.
+Workstation facts the skills encode: `gh`, `python3.12` and node/npm live in
+the `achievist-dev` toolbox on the Kinoite workstation (`toolbox run -c
+achievist-dev ...`; human setup docs in the README Development section);
+podman runs on the host — in-toolbox podman is force-wrapped to remote mode;
+the fork has issues disabled, so intake is PRs on Neliel999/achievist plus
+issues/PRs on mayberts/achievist.
