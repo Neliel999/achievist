@@ -1,0 +1,130 @@
+[
+  // ── Test suite (verified loop: throwaway pg16 on :5433, achievist-dev venv) ─
+  {
+    "label": "test: db up (pg16 on :5433)",
+    "command": "podman rm -f achievist-test-pg 2>/dev/null; podman run --rm -d --name achievist-test-pg -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=pantheon_test -p 5433:5432 postgres:16-alpine && until podman exec achievist-test-pg pg_isready -U postgres >/dev/null; do sleep 0.5; done",
+    "reveal": "no_focus",
+    "hide": "on_success"
+  },
+  {
+    "label": "test: db down",
+    "command": "podman rm -f achievist-test-pg",
+    "hide": "on_success"
+  },
+  {
+    "label": "test: venv bootstrap (/tmp/achievist-venv-test)",
+    "command": "toolbox run -c achievist-dev python3.12 -m venv /tmp/achievist-venv-test --copies && toolbox run -c achievist-dev /tmp/achievist-venv-test/bin/pip install -r requirements-dev.txt",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "use_new_terminal": true
+  },
+  {
+    "label": "test: pytest -q (full gate, needs db up)",
+    "command": "toolbox",
+    "args": ["run", "-c", "achievist-dev", "env", "TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/pantheon_test", "REQUIRE_DB_TESTS=1", "/tmp/achievist-venv-test/bin/pytest", "-q"],
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "use_new_terminal": true,
+    "hide": "on_success"
+  },
+  {
+    "label": "test: pytest current file",
+    "command": "toolbox",
+    "args": ["run", "-c", "achievist-dev", "env", "TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/pantheon_test", "REQUIRE_DB_TESTS=1", "/tmp/achievist-venv-test/bin/pytest", "-q", "$ZED_RELATIVE_FILE"],
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "hide": "on_success"
+  },
+
+  // ── Local app via compose (source build of current branch → :8744) ────────
+  {
+    "label": "app: compose up (build current branch)",
+    "command": "toolbox run -c achievist-dev bash -c 'podman rm -f achievist_app_1 2>/dev/null; podman-compose -f docker-compose.yml -p achievist up -d --build'",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "use_new_terminal": true
+  },
+  {
+    "label": "app: compose down (keeps volumes)",
+    "command": "toolbox run -c achievist-dev bash -c 'podman-compose -f docker-compose.yml -p achievist down'",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "hide": "on_success"
+  },
+  {
+    "label": "app: logs -f",
+    "command": "toolbox run -c achievist-dev bash -c 'podman-compose -f docker-compose.yml -p achievist logs -f app'",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "use_new_terminal": true,
+    "allow_concurrent_runs": true
+  },
+  {
+    "label": "app: ps",
+    "command": "toolbox run -c achievist-dev bash -c 'podman-compose -f docker-compose.yml -p achievist ps'",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "hide": "on_success"
+  },
+
+  // ── Frontend (node lives only in the achievist-dev toolbox) ──────────────
+  {
+    "label": "frontend: npm ci",
+    "command": "toolbox run -c achievist-dev npm ci",
+    "cwd": "$ZED_WORKTREE_ROOT/frontend",
+    "use_new_terminal": true
+  },
+  {
+    "label": "frontend: test (vitest)",
+    "command": "toolbox run -c achievist-dev npm test",
+    "cwd": "$ZED_WORKTREE_ROOT/frontend",
+    "hide": "on_success"
+  },
+  {
+    "label": "frontend: build (vite → app/webdist)",
+    "command": "toolbox run -c achievist-dev npm run build",
+    "cwd": "$ZED_WORKTREE_ROOT/frontend",
+    "hide": "on_success"
+  },
+
+  // ── Backend dev server (no container; schema auto-applied, main.py:402) ──
+  {
+    "label": "backend: uvicorn --reload (test db, :8000)",
+    "command": "toolbox",
+    "args": ["run", "-c", "achievist-dev", "env", "DATABASE_URL=postgresql://postgres:postgres@localhost:5433/pantheon_test", "/tmp/achievist-venv-test/bin/uvicorn", "app.main:app", "--reload", "--host", "127.0.0.1", "--port", "8000"],
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "use_new_terminal": true,
+    "allow_concurrent_runs": true
+  },
+
+  // ── Housekeeping ─────────────────────────────────────────────────────────
+  {
+    "label": "deps: recompile lockfiles (pip-compile, slow)",
+    "command": "toolbox run -c achievist-dev bash -c '[ -x /tmp/piptools-venv/bin/pip-compile ] || { python3.12 -m venv /tmp/piptools-venv --copies && /tmp/piptools-venv/bin/pip install pip-tools; }; /tmp/piptools-venv/bin/pip-compile --generate-hashes --output-file requirements.txt requirements.in && /tmp/piptools-venv/bin/pip-compile --generate-hashes --output-file requirements-dev.txt requirements-dev.in'",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "use_new_terminal": true
+  },
+  {
+    "label": "pr: status",
+    "command": "toolbox run -c achievist-dev gh pr status -R Neliel999/achievist",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "hide": "on_success"
+  },
+  {
+    "label": "pr: checks",
+    "command": "toolbox run -c achievist-dev gh pr checks -R Neliel999/achievist",
+    "cwd": "$ZED_WORKTREE_ROOT"
+  },
+  {
+    "label": "sync: fetch upstream & drift count",
+    "command": "git fetch upstream && git rev-list --left-right --count stable...upstream/main",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "hide": "on_success"
+  },
+  {
+    "label": "worktree: seed .env from main clone",
+    "command": "cp \"$ZED_MAIN_GIT_WORKTREE/.env\" \"$ZED_WORKTREE_ROOT/.env\" 2>/dev/null || touch \"$ZED_WORKTREE_ROOT/.env\"",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "hide": "on_success"
+  },
+  {
+    "label": "hook: seed .env in Zed-created worktree",
+    "command": "cp \"$ZED_MAIN_GIT_WORKTREE/.env\" \"$ZED_WORKTREE_ROOT/.env\" 2>/dev/null || touch \"$ZED_WORKTREE_ROOT/.env\"",
+    "hooks": ["create_worktree"],
+    "reveal": "no_focus",
+    "hide": "on_success"
+  }
+]
