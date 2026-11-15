@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Deployment and updates (GHCR tags, compose)
+    url: https://github.com/Neliel999/achievist#version-control-and-updates
+    about: How releases are tagged and pulled (immutable GHCR tags, beta channel)
+  - name: Development workflow (tests, PR-only stable)
+    url: https://github.com/Neliel999/achievist#development
+    about: Local test loop and the PR-only stable branch workflow
+  - name: Platform notes and connecting platforms
+    url: https://github.com/Neliel999/achievist#platform-notes
+    about: Per-platform connect fields and known limitations before reporting a sync bug

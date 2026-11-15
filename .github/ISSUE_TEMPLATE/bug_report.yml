@@ -1,0 +1,63 @@
+name: Bug report
+description: Something isn't working
+title: "fix: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Never paste real credentials** (NPSSO, Steam API key, XBOX_CLIENT_ID,
+        tokens, cookies) — redact them from logs and screenshots.
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened vs. what you expected
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version / image tag you run
+      description: "The GHCR tag, e.g. v1.0.0 or v1.1.0-beta.2 (deployments are pinned by immutable tag)"
+    validations:
+      required: true
+  - type: dropdown
+    id: platforms
+    attributes:
+      label: Platform(s) involved
+      multiple: true
+      options:
+        - Steam
+        - PSN
+        - GOG
+        - Xbox
+        - Xbox 360
+        - EA
+        - Ubisoft
+        - Google Play
+        - Roblox
+        - Other / not platform-specific
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      value: "1.\n2.\n3."
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser/device, network specifics (VPN/proxy can block third-party CDNs, see issue #15), self-hosted compose vs GHCR image
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / screenshots
+      description: Backend logs with secrets redacted; screenshots welcome
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: "I searched existing issues/PRs and this isn't a duplicate (note: PR #298 PSN profile lookup is superseded by the stable patch ac51b66)"
+          required: true
