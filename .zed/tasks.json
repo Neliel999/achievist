@@ -56,8 +56,7 @@
   {
     "label": "app: ps",
     "command": "toolbox run -c achievist-dev bash -c 'podman-compose -f docker-compose.yml -p achievist ps'",
-    "cwd": "$ZED_WORKTREE_ROOT",
-    "hide": "on_success"
+    "cwd": "$ZED_WORKTREE_ROOT"
   },
 
   // ── Frontend (node lives only in the achievist-dev toolbox) ──────────────
@@ -97,22 +96,23 @@
     "cwd": "$ZED_WORKTREE_ROOT",
     "use_new_terminal": true
   },
+  // GH_REPO pins the fork repo: gh otherwise resolves mayberts/achievist via the 'upstream' remote, and -R is broken in gh 2.97 for 'pr checks' without a positional arg
   {
     "label": "pr: status",
-    "command": "toolbox run -c achievist-dev gh pr status -R Neliel999/achievist",
-    "cwd": "$ZED_WORKTREE_ROOT",
-    "hide": "on_success"
+    "command": "toolbox run -c achievist-dev gh pr status",
+    "env": { "GH_REPO": "Neliel999/achievist" },
+    "cwd": "$ZED_WORKTREE_ROOT"
   },
   {
     "label": "pr: checks",
-    "command": "toolbox run -c achievist-dev gh pr checks -R Neliel999/achievist",
+    "command": "toolbox run -c achievist-dev gh pr checks",
+    "env": { "GH_REPO": "Neliel999/achievist" },
     "cwd": "$ZED_WORKTREE_ROOT"
   },
   {
     "label": "sync: fetch upstream & drift count",
     "command": "git fetch upstream && git rev-list --left-right --count stable...upstream/main",
-    "cwd": "$ZED_WORKTREE_ROOT",
-    "hide": "on_success"
+    "cwd": "$ZED_WORKTREE_ROOT"
   },
   {
     "label": "worktree: seed .env from main clone",
