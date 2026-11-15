@@ -1,0 +1,46 @@
+name: Feature request
+description: Propose a new feature or improvement
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Intake is issues + PRs on this fork; every change lands as a PR on `stable`
+        (green backend/frontend/e2e checks, one review, one conventional commit per fix).
+        Do not file `upstream-sync` issues (opened automatically by the upstream-watch
+        workflow) or PSN profile-lookup fixes (superseded by the stable patch ac51b66).
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One or two sentences on what you want and why
+    validations:
+      required: true
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation / problem
+      description: "What is hard or impossible to do today? (see issue #10: same game split across platforms; issue #15: images unreachable on some networks)"
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed approach
+      description: "As applicable: data model + migration, API endpoints, frontend surfaces, phasing (phase 1 / 2 / ...)"
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: "Checklist the PR must satisfy (see issues #2 and #11 for the pattern)"
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope / non-goals
+      description: What this issue deliberately does not cover (future issues)
+  - type: textarea
+    id: open-questions
+    attributes:
+      label: Open questions
+      description: "Decisions still open (see issue #10's collapse affordance)"
