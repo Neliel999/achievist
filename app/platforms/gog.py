@@ -12,6 +12,11 @@ Pipeline per sync:
    build data is only needed for writes; reads use the user token.
 3. GET https://gameplay.gog.com/clients/{clientId}/users/{userId}/achievements
    → full achievement catalog incl. locked items, unlock dates, icons, rarity.
+4. GET https://www.gog.com/u/<username>/games/stats → public-profile gameplay
+   stats (HAL JSON, 50/page; username from embed.gog.com/userData.json).
+   game.id is the GOG product id, so playtime joins straight onto app_id.
+   Only serves data when the profile exposes game stats; otherwise playtime
+   stays 0 (the UI hides a 0 playtime badge).
 
 Unofficial endpoints throughout — every external call degrades gracefully:
 non-200s are logged and skip that product/lookup instead of failing the run.
@@ -35,6 +40,8 @@ log = logging.getLogger(__name__)
 _EMBED = "https://embed.gog.com"
 _GAMEPLAY = "https://gameplay.gog.com"
 _GOGDB = "https://www.gogdb.org"
+_PROFILE = "https://www.gog.com"
+_MAX_STATS_PAGES = 100  # 50 items/page → 5000-game cap; ample for a GOG library
 
 _GAMEPLAY_HEADERS = {"Accept": "application/json", "X-Gog-Lc": "en"}
 
@@ -120,6 +127,47 @@ async def fetch_achievements(
     return resp.json().get("items") or []
 
 
+async def fetch_profile_game_stats(client: httpx.AsyncClient, username: str) -> dict[str, dict]:
+    """
+    Public profile gameplay stats: GET www.gog.com/u/<username>/games/stats
+    (HAL JSON, 50 items/page, no auth needed) →
+    {product_id: {"playtime_minutes": int, "last_played": datetime | None}}.
+    playtime is minutes; lastSession is ISO-8601. Games without reported
+    sessions are simply absent. Empty dict when the profile hides game stats
+    or the request fails — those games keep playtime 0. Read-only.
+    """
+    stats: dict[str, dict] = {}
+    for page in range(1, _MAX_STATS_PAGES + 1):
+        resp = await client.get(
+            f"{_PROFILE}/u/{username}/games/stats",
+            params={"page": page, "sort": "playtime", "order": "desc"},
+        )
+        if resp.status_code != 200:
+            if page == 1:
+                log.warning(
+                    "GOG profile gameplay stats unavailable for %r (%s) — playtime stays 0",
+                    username, resp.status_code,
+                )
+            break
+        data = resp.json()
+        for item in (data.get("_embedded") or {}).get("items") or []:
+            product_id = str((item.get("game") or {}).get("id") or "")
+            if not product_id:
+                continue
+            for entry in (item.get("stats") or {}).values():
+                playtime = entry.get("playtime")
+                if playtime is None:
+                    continue
+                stats[product_id] = {
+                    "playtime_minutes": max(0, int(playtime)),
+                    "last_played": _parse_unlock_time(entry.get("lastSession")),
+                }
+        if page >= int(data.get("pages") or 1):
+            break
+        await asyncio.sleep(config.REQUEST_DELAY_SECONDS)
+    return stats
+
+
 class GOGPlatform(Platform):
     KEY = "gog"
     LABEL = "GOG"
@@ -148,6 +196,15 @@ class GOGPlatform(Platform):
         async with httpx.AsyncClient(timeout=30) as client:
             owned = await fetch_owned_product_ids(client, access_token)
             log.info("gog: %d owned products", len(owned))
+            user_data = await gog_auth.fetch_user_data(access_token)
+            username = str(user_data.get("username") or "")
+            playtime_by_product: dict[str, dict] = {}
+            if username:
+                await asyncio.sleep(delay)
+                playtime_by_product = await fetch_profile_game_stats(client, username)
+                log.info("gog: %d products with profile playtime", len(playtime_by_product))
+            else:
+                log.warning("gog: no username from userData.json — playtime stays 0")
 
             for product_id in owned:
                 app_id = str(product_id)
@@ -174,8 +231,10 @@ class GOGPlatform(Platform):
 
                 unlock_times = [t for t in (_parse_unlock_time(it.get("date_unlocked")) for it in items) if t]
                 earned = len(unlock_times)
-                last_played = max(unlock_times) if unlock_times else None
-                await db.upsert_user_game(conn, linked_id, pg_id, 0, earned, total, last_played)
+                profile = playtime_by_product.get(app_id) or {}
+                minutes = profile.get("playtime_minutes") or 0
+                last_played = profile.get("last_played") or (max(unlock_times) if unlock_times else None)
+                await db.upsert_user_game(conn, linked_id, pg_id, minutes, earned, total, last_played)
 
                 for it in items:
                     ach_id = str(it.get("achievement_id") or it.get("achievement_key") or "")
