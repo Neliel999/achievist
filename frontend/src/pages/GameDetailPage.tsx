@@ -10,10 +10,7 @@ import { RARITY_TIER_CLASS, RARITY_TIER_HEX, rarityTier } from "../lib/rarity";
 import { gameDirectUrl, guideSearchUrl } from "../lib/guideLink";
 import { ChangeCoverModal } from "../components/ChangeCoverModal";
 import { useAuth } from "../lib/auth";
-
-function banner(g: GameDetail): string | null {
-  return g.sgdb_cover_url || g.igdb_cover_url || g.icon_url || null;
-}
+import { bannerArt } from "../lib/art";
 
 type StatusFilter = "all" | "unlocked" | "locked";
 type SortKey = "default" | "name" | "rarity" | "points" | "unlocked_at";
@@ -151,7 +148,7 @@ export function GameDetailPage() {
     );
   }
 
-  const art = game ? banner(game) : null;
+  const art = game ? bannerArt(game) : null;
   const pct = Math.round(game?.completion_pct ?? 0);
   const storeMeta = game ? PLATFORM_META[game.platform] : null;
   const storeUrl = game && storeMeta?.storeUrl ? storeMeta.storeUrl(game) : null;

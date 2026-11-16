@@ -162,6 +162,10 @@ export interface GameDetail extends Game {
   hltb_complete: number | null;
   rarity_summary: { tier: string; cnt: number }[];
   total_points: number;
+  // Raw explicit portrait override (NULL = automatic default). igdb_cover_url
+  // is the COALESCE of this with the IGDB cover; the detail-page backdrop
+  // prefers the explicit portrait over the SGDB cover.
+  portrait_cover_url: string | null;
 }
 
 export interface SgdbSearchResult {
