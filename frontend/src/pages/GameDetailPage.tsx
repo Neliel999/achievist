@@ -184,7 +184,7 @@ export function GameDetailPage() {
       {art && (
         <>
           <div
-            className="fixed inset-0 -z-10 bg-center opacity-70"
+            className="fixed inset-0 -z-10 bg-no-repeat bg-center opacity-70"
             style={{ backgroundImage: `url(${art})`, backgroundSize: backdropFit }}
           />
           <div className="fixed inset-0 -z-10 bg-gradient-to-t from-ink-950 via-ink-950/70 to-ink-950/30" />
