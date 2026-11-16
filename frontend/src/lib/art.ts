@@ -8,3 +8,11 @@ export function bannerArt(
 ): string | null {
   return g.portrait_cover_url || g.sgdb_cover_url || g.igdb_cover_url || g.icon_url || null;
 }
+
+// Backdrop fit for the full-page background: portrait art is fitted by height
+// ("auto 100%") so the whole image stays visible on a landscape viewport —
+// "cover" would scale a 600x900 portrait up to viewport width, leaving only a
+// cropped, upscaled band visible. Landscape art keeps "cover".
+export function backgroundSizeFor(naturalWidth: number, naturalHeight: number): string {
+  return naturalHeight > naturalWidth ? "auto 100%" : "cover";
+}

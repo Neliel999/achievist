@@ -10,7 +10,7 @@ import { RARITY_TIER_CLASS, RARITY_TIER_HEX, rarityTier } from "../lib/rarity";
 import { gameDirectUrl, guideSearchUrl } from "../lib/guideLink";
 import { ChangeCoverModal } from "../components/ChangeCoverModal";
 import { useAuth } from "../lib/auth";
-import { bannerArt } from "../lib/art";
+import { backgroundSizeFor, bannerArt } from "../lib/art";
 
 type StatusFilter = "all" | "unlocked" | "locked";
 type SortKey = "default" | "name" | "rarity" | "points" | "unlocked_at";
@@ -39,6 +39,7 @@ export function GameDetailPage() {
   const [sort, setSort] = useState<SortKey>("default");
   const [refreshingGuides, setRefreshingGuides] = useState(false);
   const [importingCatalog, setImportingCatalog] = useState(false);
+  const [backdropFit, setBackdropFit] = useState("cover");
 
   useEffect(() => {
     setGame(null);
@@ -50,6 +51,19 @@ export function GameDetailPage() {
     api.gameDetail(gameId).then(setGame).catch(() => setNotFound(true));
     api.gameAchievements(gameId).then(setAchs).catch(() => setAchs([]));
   }, [gameId]);
+
+  // Fit the backdrop to the art's aspect ratio: portrait images are scaled by
+  // height ("auto 100%") so the whole portrait stays visible; landscape art
+  // keeps "cover". Without this, cover upscales a portrait to viewport width
+  // and only a cropped, low-res band shows.
+  useEffect(() => {
+    const url = game ? bannerArt(game) : null;
+    if (!url) return;
+    setBackdropFit("cover");
+    const img = new Image();
+    img.onload = () => setBackdropFit(backgroundSizeFor(img.naturalWidth, img.naturalHeight));
+    img.src = url;
+  }, [game]);
 
   async function refreshGuideLinks() {
     setRefreshingGuides(true);
@@ -170,8 +184,8 @@ export function GameDetailPage() {
       {art && (
         <>
           <div
-            className="fixed inset-0 -z-10 bg-cover bg-center opacity-70"
-            style={{ backgroundImage: `url(${art})` }}
+            className="fixed inset-0 -z-10 bg-center opacity-70"
+            style={{ backgroundImage: `url(${art})`, backgroundSize: backdropFit }}
           />
           <div className="fixed inset-0 -z-10 bg-gradient-to-t from-ink-950 via-ink-950/70 to-ink-950/30" />
         </>
