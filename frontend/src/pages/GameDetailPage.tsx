@@ -183,10 +183,28 @@ export function GameDetailPage() {
           relying on DOM order */}
       {art && (
         <>
-          <div
-            className="fixed inset-0 -z-10 bg-no-repeat bg-center opacity-70"
-            style={{ backgroundImage: `url(${art})`, backgroundSize: backdropFit }}
-          />
+          {backdropFit === "cover" ? (
+            // landscape art: single sharp cover layer, as before
+            <div
+              className="fixed inset-0 -z-10 bg-no-repeat bg-cover bg-center opacity-70"
+              style={{ backgroundImage: `url(${art})` }}
+            />
+          ) : (
+            <>
+              {/* portrait art: blurred cover fill so the sides aren't empty
+                  bands (and no tiling — bg-no-repeat), then the sharp
+                  height-fitted image centered on top so the whole portrait
+                  stays visible */}
+              <div
+                className="fixed inset-0 -z-10 scale-110 bg-no-repeat bg-cover bg-center opacity-70 blur-md"
+                style={{ backgroundImage: `url(${art})` }}
+              />
+              <div
+                className="fixed inset-0 -z-10 bg-no-repeat bg-center opacity-70"
+                style={{ backgroundImage: `url(${art})`, backgroundSize: backdropFit }}
+              />
+            </>
+          )}
           <div className="fixed inset-0 -z-10 bg-gradient-to-t from-ink-950 via-ink-950/70 to-ink-950/30" />
         </>
       )}
