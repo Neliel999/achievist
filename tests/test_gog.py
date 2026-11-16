@@ -11,6 +11,7 @@ gog_auth.refresh); stub tokens only — no real endpoints or credentials.
 """
 
 import time
+from datetime import datetime, timezone
 
 import pytest
 
@@ -101,6 +102,13 @@ def _patch_gog_http(monkeypatch):
     monkeypatch.setattr(gog_module, "fetch_owned_product_ids", _owned)
     monkeypatch.setattr(gog_module, "fetch_product_info", _product_info)
     monkeypatch.setattr(gog_module, "fetch_achievements", _achievements)
+    # no real network: no profile stats unless a test overrides these
+    async def no_user_data(token):
+        return {}
+    async def no_stats(client, username):
+        return {}
+    monkeypatch.setattr(gog_auth, "fetch_user_data", no_user_data)
+    monkeypatch.setattr(gog_module, "fetch_profile_game_stats", no_stats)
 
 
 @requires_db
@@ -185,6 +193,9 @@ async def test_second_sync_uses_cached_client_id(monkeypatch, db_conn):
 @requires_db
 async def test_refresh_token_rotation_persisted(monkeypatch, db_conn):
     monkeypatch.setattr(config, "REQUEST_DELAY_SECONDS", 0)
+    async def no_user_data(token):
+        return {}
+    monkeypatch.setattr(gog_auth, "fetch_user_data", no_user_data)
 
     async def fake_refresh(refresh_token):
         assert refresh_token == "rt-old"
@@ -226,3 +237,122 @@ async def test_legacy_exophase_rows_repaired(db_conn):
         linked_id,
     )
     assert [r["platform_game_id"] for r in remaining] == [new_pg]
+
+
+# ── Profile gameplay stats (public profile HAL endpoint) ────────────────────
+
+
+class _FakeResp:
+    def __init__(self, status_code, payload=None):
+        self.status_code = status_code
+        self._payload = payload or {}
+
+    def json(self):
+        return self._payload
+
+
+class _FakeClient:
+    def __init__(self, pages):
+        self._pages = pages  # list of _FakeResp, indexed by page-1
+        self.requests = []
+
+    async def get(self, url, params=None):
+        self.requests.append((url, params))
+        return self._pages[(params or {}).get("page", 1) - 1]
+
+
+def _stats_item(product_id, playtime, last_session):
+    return {
+        "game": {"id": product_id, "title": "T", "url": "/en/game/t",
+                 "achievementSupport": True, "image": "https://cdn/t.png"},
+        "stats": {"48384666369469807": {"playtime": playtime, "lastSession": last_session}},
+    }
+
+
+async def test_fetch_profile_game_stats_paginates_and_maps(monkeypatch):
+    monkeypatch.setattr(config, "REQUEST_DELAY_SECONDS", 0)
+    pages = [
+        _FakeResp(200, {"page": 1, "pages": 2, "total": 4, "_embedded": {"items": [
+            _stats_item("111", 15, "2026-11-02T22:59:23+00:00"),
+            _stats_item("222", 8863, "2022-07-26T06:38:11+00:00"),
+        ]}}),
+        _FakeResp(200, {"page": 2, "pages": 2, "total": 4, "_embedded": {"items": [
+            _stats_item("333", 0, None),
+            {"game": {"id": "444"}, "stats": {"48384666369469807": {"playtime": None}}},  # no playtime -> skipped
+            {"game": {}, "stats": {}},  # no product id -> skipped
+        ]}}),
+    ]
+    client = _FakeClient(pages)
+    stats = await gog_module.fetch_profile_game_stats(client, "someuser")
+    assert client.requests[0][0] == "https://www.gog.com/u/someuser/games/stats"
+    assert [p["page"] for _, p in client.requests] == [1, 2]
+    assert set(stats) == {"111", "222", "333"}
+    assert stats["222"]["playtime_minutes"] == 8863
+    assert stats["222"]["last_played"] == datetime(2022, 7, 26, 6, 38, 11, tzinfo=timezone.utc)
+    assert stats["111"]["playtime_minutes"] == 15
+    assert stats["333"]["playtime_minutes"] == 0 and stats["333"]["last_played"] is None
+
+
+async def test_fetch_profile_game_stats_hidden_profile_returns_empty(monkeypatch):
+    monkeypatch.setattr(config, "REQUEST_DELAY_SECONDS", 0)
+    client = _FakeClient([_FakeResp(403)])
+    assert await gog_module.fetch_profile_game_stats(client, "privateuser") == {}
+    assert len(client.requests) == 1  # stops after the first page
+
+
+async def test_fetch_profile_game_stats_single_page_not_refetched(monkeypatch):
+    monkeypatch.setattr(config, "REQUEST_DELAY_SECONDS", 0)
+    pages = [_FakeResp(200, {"page": 1, "pages": 1, "_embedded": {"items": [_stats_item("1", 5, None)]}})]
+    client = _FakeClient(pages)
+    stats = await gog_module.fetch_profile_game_stats(client, "u")
+    assert set(stats) == {"1"} and len(client.requests) == 1
+
+
+@requires_db
+async def test_sync_writes_profile_playtime(monkeypatch, db_conn):
+    _patch_gog_http(monkeypatch)
+
+    async def user_data(token):
+        return {"userId": "goguser1", "username": "goguser"}
+
+    async def stats(client, username):
+        assert username == "goguser"
+        return {"1207658924": {"playtime_minutes": 8863,
+                               "last_played": datetime(2022, 7, 26, 6, 38, 11, tzinfo=timezone.utc)}}
+
+    monkeypatch.setattr(gog_auth, "fetch_user_data", user_data)
+    monkeypatch.setattr(gog_module, "fetch_profile_game_stats", stats)
+    creds = {"refresh_token": "rt", "access_token": "at", "token_expires_at": int(time.time()) + 3600}
+    account = await _make_account(db_conn, creds)
+
+    await GOGPlatform().sync(account, db_conn)
+    await db_conn.commit()
+
+    row = await db._fetchrow(
+        db_conn,
+        "SELECT ug.playtime_minutes, ug.last_played_at FROM user_games ug "
+        "JOIN platform_games pg ON pg.id = ug.platform_game_id "
+        "WHERE ug.linked_account_id = %s AND pg.platform_app_id = %s",
+        account["id"], "1207658924",
+    )
+    assert row["playtime_minutes"] == 8863
+    assert row["last_played_at"] == datetime(2022, 7, 26, 6, 38, 11, tzinfo=timezone.utc)
+
+
+@requires_db
+async def test_sync_without_profile_stats_keeps_playtime_zero(monkeypatch, db_conn):
+    _patch_gog_http(monkeypatch)  # fetch_user_data -> {}, fetch_profile_game_stats -> {}
+    creds = {"refresh_token": "rt", "access_token": "at", "token_expires_at": int(time.time()) + 3600}
+    account = await _make_account(db_conn, creds)
+
+    await GOGPlatform().sync(account, db_conn)
+    await db_conn.commit()
+
+    row = await db._fetchrow(
+        db_conn,
+        "SELECT ug.playtime_minutes FROM user_games ug "
+        "JOIN platform_games pg ON pg.id = ug.platform_game_id "
+        "WHERE ug.linked_account_id = %s AND pg.platform_app_id = %s",
+        account["id"], "1207658924",
+    )
+    assert row["playtime_minutes"] == 0
