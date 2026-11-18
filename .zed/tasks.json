@@ -38,7 +38,8 @@
     "label": "app: compose up (build current branch)",
     "command": "toolbox run -c achievist-dev bash -c 'podman rm -f achievist_app_1 2>/dev/null; podman-compose -f docker-compose.yml -p achievist up -d --build'",
     "cwd": "$ZED_WORKTREE_ROOT",
-    "use_new_terminal": true
+    "use_new_terminal": true,
+    "hide": "on_success"
   },
   {
     "label": "app: compose down (keeps volumes)",
