@@ -24,6 +24,14 @@ From AGENTS.md:
   on stable. Agents PREPARE the tag: `git tag vX.Y.Z stable` (beta:
   `git tag vX.Y.Z-beta.N dev`) after the test loop is green, then STOP. The
   push is ask-gated — the user approves it.
+- Beta-cycle discipline: during an active round for X.Y.Z, only that line's
+  hotfixes merge into dev; next-minor (X.Y+1.0) work waits until vX.Y.Z is
+  tagged on stable. Tag vX.Y.Z-beta.N+1 from the dev tip AFTER the hotfixes
+  merge. Exception: if the delta since the last beta tag touches no runtime
+  paths (`git diff --name-only vX.Y.Z-beta.N..dev` vs app/, frontend/, e2e/,
+  Dockerfile, requirements*), promote/release the moved tip directly.
+  release/X.Y.Z branches are NOT in use yet — introduce them only if a big
+  next-minor PR ever cannot wait out a round.
 - Changelog: release notes are generated from commits since the last tag
   (`softprops/action-gh-release`), so keep commits conventional — they become
   the release notes.
