@@ -1,6 +1,6 @@
 ---
 name: beta-test-plan
-description: When a prerelease tag (vX.Y.Z-beta.N) is published on stable, diff it against the previous release and produce a tester-facing test plan with repro steps for every new feature, improvement and fix on the :beta channel.
+description: When a prerelease tag (vX.Y.Z-beta.N) is published from dev, diff it against the previous release and produce a tester-facing test plan with repro steps for every new feature, improvement and fix on the :beta channel.
 ---
 
 # Beta release test plan
@@ -8,8 +8,8 @@ description: When a prerelease tag (vX.Y.Z-beta.N) is published on stable, diff 
 Trigger: a new prerelease exists on Neliel999/achievist —
 `toolbox run -c achievist-dev gh release list -R Neliel999/achievist` (prereleases are
 marked), or locally `git tag -l 'v*-beta.*'`. Run once per prerelease, right
-after the tag push (tag pushes are ask-gated; the release pipeline itself is
-release.yml: pytest gate -> GHCR `:<tag>` + `:beta` -> GitHub prerelease).
+after the tag push (tag pushes are ask-gated; prerelease tags are cut on dev;
+the release pipeline itself is release.yml: tag-placement guard -> pytest gate -> GHCR `:<tag>` + `:beta` -> GitHub prerelease).
 
 ## 1. Identify comparison bases
 
