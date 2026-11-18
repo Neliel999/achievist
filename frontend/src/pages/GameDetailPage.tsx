@@ -10,10 +10,7 @@ import { RARITY_TIER_CLASS, RARITY_TIER_HEX, rarityTier } from "../lib/rarity";
 import { gameDirectUrl, guideSearchUrl } from "../lib/guideLink";
 import { ChangeCoverModal } from "../components/ChangeCoverModal";
 import { useAuth } from "../lib/auth";
-
-function banner(g: GameDetail): string | null {
-  return g.sgdb_cover_url || g.igdb_cover_url || g.icon_url || null;
-}
+import { backgroundSizeFor, bannerArt } from "../lib/art";
 
 type StatusFilter = "all" | "unlocked" | "locked";
 type SortKey = "default" | "name" | "rarity" | "points" | "unlocked_at";
@@ -42,6 +39,7 @@ export function GameDetailPage() {
   const [sort, setSort] = useState<SortKey>("default");
   const [refreshingGuides, setRefreshingGuides] = useState(false);
   const [importingCatalog, setImportingCatalog] = useState(false);
+  const [backdropFit, setBackdropFit] = useState("cover");
 
   useEffect(() => {
     setGame(null);
@@ -53,6 +51,19 @@ export function GameDetailPage() {
     api.gameDetail(gameId).then(setGame).catch(() => setNotFound(true));
     api.gameAchievements(gameId).then(setAchs).catch(() => setAchs([]));
   }, [gameId]);
+
+  // Fit the backdrop to the art's aspect ratio: portrait images are scaled by
+  // height ("auto 100%") so the whole portrait stays visible; landscape art
+  // keeps "cover". Without this, cover upscales a portrait to viewport width
+  // and only a cropped, low-res band shows.
+  useEffect(() => {
+    const url = game ? bannerArt(game) : null;
+    if (!url) return;
+    setBackdropFit("cover");
+    const img = new Image();
+    img.onload = () => setBackdropFit(backgroundSizeFor(img.naturalWidth, img.naturalHeight));
+    img.src = url;
+  }, [game]);
 
   async function refreshGuideLinks() {
     setRefreshingGuides(true);
@@ -151,7 +162,7 @@ export function GameDetailPage() {
     );
   }
 
-  const art = game ? banner(game) : null;
+  const art = game ? bannerArt(game) : null;
   const pct = Math.round(game?.completion_pct ?? 0);
   const storeMeta = game ? PLATFORM_META[game.platform] : null;
   const storeUrl = game && storeMeta?.storeUrl ? storeMeta.storeUrl(game) : null;
@@ -172,10 +183,28 @@ export function GameDetailPage() {
           relying on DOM order */}
       {art && (
         <>
-          <div
-            className="fixed inset-0 -z-10 bg-cover bg-center opacity-70"
-            style={{ backgroundImage: `url(${art})` }}
-          />
+          {backdropFit === "cover" ? (
+            // landscape art: single sharp cover layer, as before
+            <div
+              className="fixed inset-0 -z-10 bg-no-repeat bg-cover bg-center opacity-70"
+              style={{ backgroundImage: `url(${art})` }}
+            />
+          ) : (
+            <>
+              {/* portrait art: blurred cover fill so the sides aren't empty
+                  bands (and no tiling — bg-no-repeat), then the sharp
+                  height-fitted image centered on top so the whole portrait
+                  stays visible */}
+              <div
+                className="fixed inset-0 -z-10 scale-110 bg-no-repeat bg-cover bg-center opacity-70 blur-md"
+                style={{ backgroundImage: `url(${art})` }}
+              />
+              <div
+                className="fixed inset-0 -z-10 bg-no-repeat bg-center opacity-70"
+                style={{ backgroundImage: `url(${art})`, backgroundSize: backdropFit }}
+              />
+            </>
+          )}
           <div className="fixed inset-0 -z-10 bg-gradient-to-t from-ink-950 via-ink-950/70 to-ink-950/30" />
         </>
       )}

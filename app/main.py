@@ -1012,6 +1012,7 @@ async def game_detail(platform_game_id: int, user: dict = Depends(require_user))
                 pg.hltb_main,
                 pg.hltb_extra,
                 pg.hltb_complete,
+                pg.portrait_cover_url,
                 COALESCE(pg.portrait_cover_url, ig.cover_url) AS igdb_cover_url,
                 ug.linked_account_id,
                 ug.playtime_minutes,
