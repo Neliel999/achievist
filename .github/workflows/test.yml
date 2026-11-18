@@ -2,7 +2,7 @@ name: Tests
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   pull_request:
 
 jobs:
@@ -122,3 +122,17 @@ jobs:
       - run: npm run build
         working-directory: frontend
       - run: pytest e2e -q
+
+  stable-pr-guard:
+    # stable accepts exactly one kind of PR: the promotion PR from dev.
+    # Branch protection cannot restrict PR head branches, so this check
+    # (required on stable) fails any other PR that targets stable.
+    if: github.event_name == 'pull_request' && github.base_ref == 'stable'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Reject non-dev PRs targeting stable
+        run: |
+          if [ "${{ github.head_ref }}" != "dev" ]; then
+            echo "::error::stable only accepts the promotion PR from dev (head=dev); open this PR against dev instead."
+            exit 1
+          fi

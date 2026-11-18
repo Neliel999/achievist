@@ -31,6 +31,6 @@ jobs:
               gh issue create \
                 --title "Upstream activity: $NEW new commit(s) on mayberts/achievist" \
                 --label upstream-sync \
-                --body "Upstream main has moved ($LOCAL -> $REMOTE). Rebase stable, drop superseded patches, run tests, cut a new tag. Commits: https://github.com/mayberts/achievist/compare/$LOCAL...$REMOTE"
+                --body "Upstream main has moved ($LOCAL -> $REMOTE). Rebase dev onto main and promote dev to stable (rebase-stable skill), drop superseded patches, run tests. Commits: https://github.com/mayberts/achievist/compare/$LOCAL...$REMOTE"
             fi
           fi
