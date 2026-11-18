@@ -30,6 +30,17 @@ jobs:
       REQUIRE_DB_TESTS: 1
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0   # tag-placement guard inspects all branches
+      - name: Enforce tag placement (prerelease on dev, release on stable)
+        run: |
+          if [[ "${{ github.ref_name }}" == *-* ]]; then
+            git branch -r --contains "${{ github.sha }}" | grep -qE 'origin/dev$' \
+              || { echo "::error::Prerelease tags (vX.Y.Z-beta.N) must be cut on dev."; exit 1; }
+          else
+            git branch -r --contains "${{ github.sha }}" | grep -qE 'origin/stable$' \
+              || { echo "::error::Release tags (vX.Y.Z) must be cut on stable."; exit 1; }
+          fi
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"

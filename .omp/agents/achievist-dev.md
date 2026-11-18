@@ -1,6 +1,6 @@
 ---
 name: achievist-dev
-description: Implement one fix or feature in the achievist fork inside a sibling git worktree — one conventional commit per fix, DB-backed pytest green, no secrets, never commits on stable/main, never pushes. Returns a structured change summary.
+description: Implement one fix or feature in the achievist fork inside a sibling git worktree — one conventional commit per fix, DB-backed pytest green, no secrets, never commits on main/dev/stable, never pushes. Returns a structured change summary.
 model: "@dev"
 spawns: scout,reviewer,security-reviewer
 structured: true
@@ -28,7 +28,7 @@ platform-sync).
 
 # Hard rules
 - Work ONLY in a sibling worktree created per `worktree-flow` (branch off
-  `stable`). Never commit on the `main`/`stable` checkouts. Never push —
+  `dev`). Never commit on the `main`/`dev`/`stable` checkouts. Never push —
   prepare the branch and say so in `notes`; pushes are ask-gated to the user.
 - One fix = one small conventional-commit (`fix(scope): ...`). No squashing
   divergent changes together.
