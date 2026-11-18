@@ -10,31 +10,41 @@ diff if upstream revives.
 ## Repo topology (invariant)
 
 - `main` = fast-forward-only mirror of upstream main. NEVER commit here.
-- `stable` = release branch = upstream main + small labeled patch commits.
-- Tags (SemVer: v1.0.0, v1.0.1, v1.1.0 …) live only on `stable`.
+- `dev` = integration branch (repo default branch) = upstream main + all patch
+  PRs. Every topic PR targets dev (base dev).
+- `stable` = validated releases only: it advances exclusively via the promotion
+  PR from dev (head=dev only, enforced by the stable-pr-guard check) after a
+  beta round passes.
+- Tags (SemVer: v1.0.0, v1.0.1, v1.1.0 …): prereleases `vX.Y.Z-beta.N` are cut
+  on dev; release tags `vX.Y.Z` only on stable (placement enforced in
+  release.yml).
 - Remotes: origin (fork), upstream (mayberts), fernando (FernandoOMelo).
-  The `fernando` remote can be removed once its patch is carried on stable.
+  The `fernando` remote can be removed once its patch is carried on dev.
 
 ## Workflow rules
 
 - Work happens in a per-session git worktree, created as a SIBLING of the main
-  clone: `git worktree add ../achievist-<topic> -b <topic> stable` from
-  ~/Projects/achievist. Never commit on stable/main checkouts directly.
+  clone: `git worktree add ../achievist-<topic> -b <topic> dev` from
+  ~/Projects/achievist. Never commit on main/dev/stable checkouts directly.
 - Patch discipline: one fix = one small commit, conventional-commit style
   (`fix(psn): ...`). Never squash divergent changes into one commit.
 - Git add/commit only in worktrees. Branch pushes and PR creation are NOT
   ask-gated: push the branch and open the PR when the work is done — the user
   validates or refuses PRs. TAG pushes stay ask-gated (they publish releases):
   prepare the tag, the user approves the push.
-- stable is PR-ONLY: every change lands via a pull request (base stable) with
-  green required checks (backend, frontend, e2e) and one approving review —
-  never merge into stable locally. Enforced by branch protection on
-  origin/stable. Sole force-push exception: the rebase-stable procedure.
-- After a topic PR merges into stable, delete the branch locally and on
+- dev is PR-ONLY: every change lands via a pull request (base dev) with green
+  required checks (backend, frontend, e2e, lockfiles) — never merge into dev
+  locally. Enforced by branch protection on origin/dev.
+- stable is PR-ONLY and accepts ONLY the promotion PR from dev: green checks
+  plus one approving review (both enforced on origin/stable), and the
+  stable-pr-guard check rejects any other head branch. Sole force-push
+  exception: the rebase-stable procedure rewrites dev; stable then advances
+  only via the promotion PR.
+- After a topic PR merges into dev, delete the branch locally and on
   origin. Merged branches must not linger.
 - Rebase procedure when upstream moves: fetch upstream, fast-forward main,
-  rebase stable onto main, drop patches upstream superseded, run pytest,
-  report the resulting patch diff summary before any push.
+  rebase dev onto main, drop patches upstream superseded, run pytest, then
+  promote dev -> stable via PR; report the patch diff summary before any push.
 
 ## Environment & secrets
 
@@ -57,7 +67,7 @@ diff if upstream revives.
   (same for `-dev`); never edit the generated `.txt` directly. CI and the
   Dockerfile install with `--require-hashes`, so a missing/wrong hash fails.
 - Frontend: React + Vite under `frontend/`. e2e suite under `e2e/`.
-- Releases: tag push `v*` on stable triggers GitHub Actions (pytest gate with
+- Releases: a `v*` tag push (prerelease on dev, release on stable) triggers GitHub Actions (pytest gate with
   DB -> GHCR image -> GitHub Release). Agents prepare the tag; the user
   approves the push. On each prerelease (vX.Y.Z-beta.N), run the
   `beta-test-plan` skill: diff the beta against the previous release and
@@ -74,10 +84,12 @@ diff if upstream revives.
 - Homelab consumes the image by TAG (`ghcr.io/neliel999/achievist:v1.0.0`),
   so tag immutability is a hard requirement, not a nicety.
 
-- Beta channel: prerelease tags `vX.Y.Z-beta.N` on stable run the same gated
+- Beta channel: prerelease tags `vX.Y.Z-beta.N` on dev run the same gated
   release pipeline but push `:beta` (never `:stable`) and create a GitHub
   prerelease. Testers deploy side-by-side with `docker-compose.ghcr-beta.yml`
   (`IMAGE_TAG=v1.1.0-beta.N` pins a beta; default `:beta` tracks the latest).
+  After the beta round passes, merge the promotion PR dev -> stable and cut
+  the release tag `vX.Y.Z` on stable.
 
 ## Current patch set
 

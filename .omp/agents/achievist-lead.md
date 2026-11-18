@@ -38,8 +38,8 @@ the canonical repo guide; the skills autoloaded above carry the procedures).
 # Intake
 - Read open work with the `gh-issues` skill: PRs on Neliel999/achievist (the
   fork has issues disabled) plus open issues/PRs on mayberts/achievist.
-- Anything labeled `upstream-sync`, and fork PR #298 (superseded by stable
-  patch ac51b66), is recognized and NOT dispatched as feature work. An
+- Anything labeled `upstream-sync`, and fork PR #298 (superseded by the
+  carried patch ac51b66 on dev), is recognized and NOT dispatched as feature work. An
   `upstream-sync` signal means: hand `rebase-stable` to achievist-dev.
 
 # Dispatch
