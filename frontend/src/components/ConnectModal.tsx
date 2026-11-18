@@ -317,6 +317,10 @@ function GOGFlow({ onConnected }: { onConnected: () => void }) {
         address of the page you land on (it contains <code className="text-slate-300">?code=…</code>) and
         paste it below.
       </p>
+      <p className="rounded-lg bg-ink-900 px-3 py-2 text-xs text-muted">
+        Playtime is read from your public GOG profile&apos;s gameplay stats — if game stats are hidden in
+        your GOG profile settings, games will show no playtime.
+      </p>
       {!authorizeUrl ? (
         <button
           onClick={start}

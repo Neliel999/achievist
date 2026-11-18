@@ -142,3 +142,23 @@ async def test_sgdb_art_for_returns_verticals_and_icons():
     assert art["grids"] == ["https://cdn/grid.png", "https://cdn/grid.png"]  # 460x215 + 920x430 passes
     assert art["verticals"] == ["https://cdn/vertical.png"]
     assert art["icons"] == ["https://cdn/icon.png"]
+
+
+@requires_db
+async def test_game_detail_exposes_explicit_portrait_override(db_conn, client):
+    game_id, _ = await _seed(db_conn, client)
+
+    await client.post("/api/art-set", params={"platform_game_id": game_id, "field": "portrait", "url": "https://cdn/portrait.png"})
+    resp = await client.get(f"/api/games/{game_id}")
+    assert resp.status_code == 200
+    detail = resp.json()
+    # raw override column is exposed so the UI can prioritize it over the
+    # auto SGDB cover; igdb_cover_url carries the COALESCE'd value
+    assert detail["portrait_cover_url"] == "https://cdn/portrait.png"
+    assert detail["igdb_cover_url"] == "https://cdn/portrait.png"
+
+    # reset -> NULL again, igdb_cover_url falls back (no IGDB row seeded)
+    await client.post("/api/art-set", params={"platform_game_id": game_id, "field": "portrait", "url": ""})
+    resp = await client.get(f"/api/games/{game_id}")
+    assert resp.json()["portrait_cover_url"] is None
+    assert resp.json()["igdb_cover_url"] is None
