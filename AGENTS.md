@@ -90,6 +90,14 @@ diff if upstream revives.
   (`IMAGE_TAG=v1.1.0-beta.N` pins a beta; default `:beta` tracks the latest).
   After the beta round passes, merge the promotion PR dev -> stable and cut
   the release tag `vX.Y.Z` on stable.
+- Beta-cycle discipline: while a beta round for X.Y.Z is active, only that
+  line's hotfixes merge into dev — next-minor (X.Y+1.0) work waits until
+  vX.Y.Z is tagged on stable. Always tag the next beta (vX.Y.Z-beta.N+1) from
+  the dev tip AFTER the hotfixes merge. Exception: if
+  `git diff --name-only vX.Y.Z-beta.N..dev` touches no runtime paths (app/,
+  frontend/, e2e/, Dockerfile, requirements*), the moved tip may be promoted
+  and released directly. If a big next-minor PR ever cannot wait out a round,
+  that is the trigger to introduce release/X.Y.Z branches (not in use yet).
 
 ## Current patch set
 
