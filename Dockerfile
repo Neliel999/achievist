@@ -13,9 +13,16 @@ FROM python:3.12-slim
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 WORKDIR /app
 
-# postgresql-client provides pg_dump/pg_restore, used by app/backup.py
-RUN apt-get update && apt-get install -y --no-install-recommends postgresql-client \
+# postgresql-client provides pg_dump/pg_restore, used by app/backup.py.
+# zlib1g is named explicitly so the layer upgrades the base image's vulnerable
+# build to the fixed trixie-security version (issue #24); libpq5 arrives with
+# postgresql-client and likewise resolves to the fixed 17.12-0+deb13u1.
+RUN apt-get update && apt-get install -y --no-install-recommends postgresql-client zlib1g \
     && rm -rf /var/lib/apt/lists/*
+
+# pip is not a lockfile dep (pip-tools marks it unsafe for hashed files); pin it
+# here so the shipped image carries all published pip CVE fixes (issue #24).
+RUN pip install --no-cache-dir pip==26.3
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir --require-hashes -r requirements.txt
