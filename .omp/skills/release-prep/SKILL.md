@@ -20,7 +20,8 @@ From AGENTS.md:
   GitHub Release. Final tags push `:stable` and publish a full release;
   prerelease tags push `:beta` and publish a GitHub prerelease.
 - Promotion flow: after a beta round on dev passes, merge the promotion PR
-  dev -> stable (green checks + 1 approving review), THEN cut the release tag
+  dev -> stable (green checks; review count is 0 — a single maintainer cannot
+  self-approve, the merge click is the human gate), THEN cut the release tag
   on stable. Agents PREPARE the tag: `git tag vX.Y.Z stable` (beta:
   `git tag vX.Y.Z-beta.N dev`) after the test loop is green, then STOP. The
   push is ask-gated — the user approves it.

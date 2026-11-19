@@ -36,10 +36,13 @@ diff if upstream revives.
   required checks (backend, frontend, e2e, lockfiles) — never merge into dev
   locally. Enforced by branch protection on origin/dev.
 - stable is PR-ONLY and accepts ONLY the promotion PR from dev: green checks
-  plus one approving review (both enforced on origin/stable), and the
-  stable-pr-guard check rejects any other head branch. Sole force-push
-  exception: the rebase-stable procedure rewrites dev; stable then advances
-  only via the promotion PR.
+  enforced on origin/stable (backend, frontend, e2e, lockfiles,
+  stable-pr-guard), and the stable-pr-guard check rejects any other head
+  branch. required_approving_review_count is 0 on purpose: with a single
+  maintainer GitHub forbids author self-approval, so the merge click is the
+  human gate. stable forbids force-pushes; the sole force-push exception is
+  the rebase-stable procedure, which rewrites dev — stable then advances only
+  via the promotion PR.
 - After a topic PR merges into dev, delete the branch locally and on
   origin. Merged branches must not linger.
 - Rebase procedure when upstream moves: fetch upstream, fast-forward main,
