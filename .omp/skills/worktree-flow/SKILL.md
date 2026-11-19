@@ -20,6 +20,7 @@ From AGENTS.md (canonical):
   branch protection on origin/dev blocks direct pushes. After the PR merges,
   delete the branch locally and on origin.
 - stable accepts ONLY the promotion PR from dev (head=dev), enforced by the
-  `stable-pr-guard` check in test.yml plus branch protection (green checks +
-  1 approving review). Never open any other PR against stable.
+  `stable-pr-guard` check in test.yml plus branch protection (green checks;
+  review count is 0 because a single maintainer cannot self-approve — the
+  merge click is the human gate). Never open any other PR against stable.
 - When upstream moves, use the `rebase-stable` skill instead of merging.
