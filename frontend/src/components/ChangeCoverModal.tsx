@@ -4,6 +4,7 @@ import { api } from "../api";
 import type { SgdbSearchResult } from "../types";
 import { useToast } from "./Toast";
 import { useModal } from "../lib/useModal";
+import { imgUrl } from "../lib/imgUrl";
 
 export type ArtField = "cover" | "portrait" | "icon";
 
@@ -233,7 +234,7 @@ export function ChangeCoverModal({
                             className="group relative flex-shrink-0 overflow-hidden rounded-md border border-line ring-1 ring-transparent transition hover:ring-accent disabled:opacity-50"
                           >
                             <img
-                              src={u}
+                              src={imgUrl(u)}
                               alt=""
                               className={`${cls} object-cover`}
                               loading="lazy"

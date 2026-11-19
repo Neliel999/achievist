@@ -17,6 +17,7 @@ import {
 import { platformLabel } from "../lib/platforms";
 import { fmtDate } from "../lib/format";
 import { RARITY_TIER_HEX } from "../lib/rarity";
+import { imgUrl } from "../lib/imgUrl";
 
 interface ProgressionPoint {
   month: string;
@@ -155,7 +156,7 @@ export function StatisticsPage() {
             {stats.on_this_day.map((e, i) => (
               <div key={i} className="flex items-center gap-3 rounded-lg bg-ink-800 px-3 py-2">
                 {e.icon_url ? (
-                  <img src={e.icon_url} alt="" className="h-8 w-8 shrink-0 rounded" />
+                  <img src={imgUrl(e.icon_url)} alt="" className="h-8 w-8 shrink-0 rounded" />
                 ) : (
                   <div className="h-8 w-8 shrink-0 rounded bg-ink-700" />
                 )}

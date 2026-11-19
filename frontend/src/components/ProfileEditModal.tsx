@@ -2,6 +2,7 @@ import { useState } from "react";
 import { FileJson, X } from "lucide-react";
 import { api } from "../api";
 import { useModal } from "../lib/useModal";
+import { imgUrl } from "../lib/imgUrl";
 import type { Profile } from "../types";
 import { useToast } from "./Toast";
 
@@ -87,7 +88,7 @@ export function ProfileEditModal({
             />
             {avatarUrl.trim() && (
               <img
-                src={avatarUrl.trim()}
+                src={imgUrl(avatarUrl.trim())}
                 alt=""
                 className="mt-2 h-14 w-14 rounded-full object-cover ring-1 ring-black/40"
                 onError={(e) => (e.currentTarget.style.visibility = "hidden")}
@@ -107,7 +108,7 @@ export function ProfileEditModal({
             <p className="mt-1 text-xs text-faint">Shown behind every page. A game's own art still takes over on its detail page.</p>
             {backgroundUrl.trim() && (
               <img
-                src={backgroundUrl.trim()}
+                src={imgUrl(backgroundUrl.trim())}
                 alt=""
                 className="mt-2 h-16 w-full rounded-lg object-cover ring-1 ring-black/40"
                 onError={(e) => (e.currentTarget.style.visibility = "hidden")}
