@@ -75,6 +75,20 @@ EXOPHASE_ACCESS_TOKEN = os.getenv("EXOPHASE_ACCESS_TOKEN", "")
 GOOGLE_SEARCH_API_KEY = os.getenv("GOOGLE_SEARCH_API_KEY", "")
 GOOGLE_SEARCH_ENGINE_ID = os.getenv("GOOGLE_SEARCH_ENGINE_ID", "")
 
+# Same-origin image proxy (GET /api/img, app/imgproxy.py). EXTRA_HOSTS is a
+# comma-separated list of additional hosts to allow beyond the built-in CDN
+# list (e.g. a self-hosted Nextcloud) — also add them to KNOWN_HOSTS in
+# frontend/src/lib/imgUrl.ts or the frontend will not rewrite their URLs.
+IMG_PROXY_EXTRA_HOSTS = [
+    h.strip().lower().rstrip(".")
+    for h in os.getenv("IMG_PROXY_EXTRA_HOSTS", "").split(",")
+    if h.strip()
+]
+IMG_PROXY_CACHE_DIR = os.getenv("IMG_PROXY_CACHE_DIR", "/data/img_cache")
+IMG_PROXY_TTL_SECONDS = int(os.getenv("IMG_PROXY_TTL_SECONDS", str(30 * 24 * 3600)))
+IMG_PROXY_MAX_MB = int(os.getenv("IMG_PROXY_MAX_MB", "512"))
+IMG_PROXY_TIMEOUT_SECONDS = float(os.getenv("IMG_PROXY_TIMEOUT_SECONDS", "15"))
+
 
 def enabled_accounts() -> list[dict]:
     from app.xbox_auth import load_refresh_token

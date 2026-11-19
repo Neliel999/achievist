@@ -4,6 +4,7 @@ import { Gamepad2, Search, Trophy, X } from "lucide-react";
 import { api } from "../api";
 import { platformLabel } from "../lib/platforms";
 import { RARITY_TIER_CLASS, rarityTier } from "../lib/rarity";
+import { imgUrl } from "../lib/imgUrl";
 import type { AchievementSearchResult, Game } from "../types";
 
 /**
@@ -42,7 +43,7 @@ export function toResults(games: Game[], achievements: AchievementSearchResult[]
         id: g.platform_game_id,
         name: g.name,
         platform: g.platform,
-        icon: g.icon_url ?? g.sgdb_cover_url,
+        icon: imgUrl(g.icon_url ?? g.sgdb_cover_url),
         pct: g.completion_pct,
       }),
     ),
@@ -56,7 +57,7 @@ export function toResults(games: Game[], achievements: AchievementSearchResult[]
         name: a.name ?? "Unnamed achievement",
         gameName: a.game_name,
         platform: a.platform,
-        icon: a.icon_url,
+        icon: imgUrl(a.icon_url),
         rarity: a.rarity_pct,
       }),
     ),

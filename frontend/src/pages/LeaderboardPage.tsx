@@ -7,6 +7,7 @@ import type {
 } from "../types";
 import { fmtNum, fmtRelative } from "../lib/format";
 import { platformLabel } from "../lib/platforms";
+import { imgUrl } from "../lib/imgUrl";
 
 const FAMILY_ACTIVITY_POLL_MS = 45_000;
 
@@ -43,7 +44,7 @@ function ActivityRow({ event }: { event: FamilyUnlockEvent }) {
   return (
     <div className="flex items-center gap-3 rounded-lg bg-ink-800 px-3 py-2">
       {event.icon_url ? (
-        <img src={event.icon_url} alt="" className="h-8 w-8 shrink-0 rounded" />
+        <img src={imgUrl(event.icon_url)} alt="" className="h-8 w-8 shrink-0 rounded" />
       ) : (
         <div className="h-8 w-8 shrink-0 rounded bg-ink-700" />
       )}
@@ -96,7 +97,7 @@ function Row({ entry, rank, highlight }: { entry: LeaderboardEntry; rank: number
       <RankBadge rank={rank} />
       <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-ink-700 text-muted">
         {entry.avatar_url ? (
-          <img src={entry.avatar_url} alt="" className="h-full w-full object-cover" />
+          <img src={imgUrl(entry.avatar_url)} alt="" className="h-full w-full object-cover" />
         ) : (
           <Medal size={18} />
         )}
@@ -144,7 +145,7 @@ function SharedGameRow({ game, onCompare }: { game: SharedGame; onCompare: () =>
       <div className="flex items-center gap-3">
         <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-ink-700 text-muted">
           {game.sgdb_cover_url || game.icon_url ? (
-            <img src={game.sgdb_cover_url || game.icon_url || ""} alt="" className="h-full w-full object-cover" />
+            <img src={imgUrl(game.sgdb_cover_url || game.icon_url) || ""} alt="" className="h-full w-full object-cover" />
           ) : (
             <Gamepad2 size={16} />
           )}

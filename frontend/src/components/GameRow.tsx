@@ -1,10 +1,11 @@
 import { Trophy, Clock, Hourglass } from "lucide-react";
 import type { Game } from "../types";
 import { fmtPlaytime, fmtDate, fmtHours } from "../lib/format";
+import { imgUrl } from "../lib/imgUrl";
 import { PlatformBadge } from "./PlatformBadge";
 
 function banner(g: Game): string | null {
-  return g.sgdb_cover_url || g.igdb_cover_url || g.icon_url || null;
+  return imgUrl(g.sgdb_cover_url || g.igdb_cover_url || g.icon_url);
 }
 
 export function GameRow({

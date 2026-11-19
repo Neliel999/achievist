@@ -12,7 +12,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from app import auth, backup, config, db, hltb as hltb_names, milestones as milestones_def, ratelimit
+from app import auth, backup, config, db, hltb as hltb_names, imgproxy, milestones as milestones_def, ratelimit
 from app.db import _fetch, _fetchrow
 from app.platforms import PLATFORMS
 from app.platforms import trueachievements
@@ -2968,6 +2968,26 @@ async def exophase_debug(admin: dict = Depends(require_admin)):
         "exophase_360_titles": [g["title"] for g in xbox_360_games],
         "db_xbox_games_with_missing_icons": match_results,
     }
+
+@app.get("/api/img")
+async def proxy_image(url: str = Query(...)):
+    """Proxy a remote image through the backend (allowlist + disk cache in
+    app/imgproxy.py), so clients that cannot reach the CDN directly still
+    see covers/icons. Non-allowlisted hosts are rejected with 400."""
+    if not imgproxy.host_allowed(url):
+        raise HTTPException(status_code=400, detail="host not allowed")
+    result = await imgproxy.fetch_image(url)
+    if result is None:
+        raise HTTPException(status_code=502, detail="upstream fetch failed")
+    body, content_type = result
+    return Response(
+        content=body,
+        headers={
+            "Content-Type": content_type,
+            "Cache-Control": "public, max-age=31536000, immutable",
+        },
+    )
+
 
 
 import mimetypes

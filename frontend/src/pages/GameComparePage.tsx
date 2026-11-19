@@ -7,6 +7,7 @@ import { platformLabel } from "../lib/platforms";
 import { RARITY_TIER_CLASS, rarityTier } from "../lib/rarity";
 import { gameDirectUrl, guideSearchUrl } from "../lib/guideLink";
 import { fmtDate } from "../lib/format";
+import { imgUrl } from "../lib/imgUrl";
 
 export function GameComparePage() {
   const { id } = useParams<{ id: string }>();
@@ -70,7 +71,7 @@ export function GameComparePage() {
                     <div key={a.id} className="flex items-center gap-3 px-4 py-3">
                       <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-ink-700 text-muted">
                         {a.icon_url ? (
-                          <img src={a.icon_url} alt="" className="h-full w-full object-cover" />
+                          <img src={imgUrl(a.icon_url)} alt="" className="h-full w-full object-cover" />
                         ) : (
                           <Trophy size={15} />
                         )}
