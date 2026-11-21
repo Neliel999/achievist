@@ -805,6 +805,7 @@ _HLTB_REMAINING_SQL = """
 async def games(
     sort: str = Query("recent", pattern="^(completion|recent|playtime|name|fastest)$"),
     platform: str | None = None,
+    console: str | None = None,
     search: str | None = None,
     completion: str | None = Query(None, pattern="^(completed|in_progress|not_started)$"),
     page: int = Query(1, ge=1),
@@ -836,6 +837,9 @@ async def games(
     if platform:
         filters.append("pg.platform = %s")
         params.append(platform)
+    if console:
+        filters.append("pg.psn_console = %s")
+        params.append(console)
     if search:
         filters.append("pg.name ILIKE %s")
         params.append(f"%{search}%")
@@ -872,6 +876,7 @@ async def games(
                 CASE WHEN pg.platform = 'ubisoft' THEN COALESCE(ig.name, pg.name) ELSE pg.name END AS name,
                 COALESCE(pg.icon_url_override, pg.icon_url) AS icon_url,
                 pg.store_id,
+                pg.psn_console,
                 pg.sgdb_cover_url,
                 COALESCE(pg.portrait_cover_url, ig.cover_url) AS igdb_cover_url,
                 ug.playtime_minutes,
@@ -897,6 +902,27 @@ async def games(
         "page_size": page_size,
         "games": [dict(r) for r in rows],
     }
+
+
+@app.get("/api/psn/consoles")
+async def psn_consoles(user: dict = Depends(require_user)):
+    """Distinct PSN console tags (platform_games.psn_console) across the user's games."""
+    pool = await db.get_pool()
+    async with pool.connection() as conn:
+        rows = await _fetch(
+            conn,
+            """
+            SELECT DISTINCT pg.psn_console
+            FROM platform_games pg
+            JOIN user_games ug ON ug.platform_game_id = pg.id
+            JOIN linked_accounts la ON la.id = ug.linked_account_id AND la.user_id = %s
+            WHERE pg.platform = 'psn' AND pg.psn_console IS NOT NULL
+            ORDER BY pg.psn_console
+            """,
+            user["id"],
+        )
+    return {"consoles": [r["psn_console"] for r in rows]}
+
 
 
 _RARITY_TIER_SQL = {
@@ -1007,6 +1033,7 @@ async def game_detail(platform_game_id: int, user: dict = Depends(require_user))
                 CASE WHEN pg.platform = 'ubisoft' THEN COALESCE(ig.name, pg.name) ELSE pg.name END AS name,
                 COALESCE(pg.icon_url_override, pg.icon_url) AS icon_url,
                 pg.store_id,
+                pg.psn_console,
                 pg.sgdb_cover_url,
                 pg.guide_url,
                 pg.hltb_main,

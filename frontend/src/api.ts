@@ -83,6 +83,7 @@ async function send<T>(url: string, method: string, body?: unknown): Promise<T> 
 export interface GamesQuery {
   sort?: string;
   platform?: string;
+  console?: string;
   search?: string;
   completion?: string;
   page?: number;
@@ -144,6 +145,8 @@ export const api = {
     });
     return get<GamesResponse>(`/api/games?${params.toString()}`);
   },
+
+  psnConsoles: () => get<{ consoles: string[] }>("/api/psn/consoles"),
 
   gameDetail: (id: number) => get<GameDetail>(`/api/games/${id}`),
   gameAchievements: (id: number) => get<Achievement[]>(`/api/games/${id}/achievements`),
