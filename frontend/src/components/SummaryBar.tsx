@@ -3,6 +3,7 @@ import { Trophy, Gamepad2, Crown, Clock, Target, User, Pencil } from "lucide-rea
 import type { Profile, Summary } from "../types";
 import { fmtNum, fmtPlaytime } from "../lib/format";
 import { platformLabel } from "../lib/platforms";
+import { imgUrl } from "../lib/imgUrl";
 import { api } from "../api";
 import { ProfileEditModal } from "./ProfileEditModal";
 
@@ -43,7 +44,7 @@ export function SummaryBar({ summary }: { summary: Summary }) {
         title="Edit profile"
       >
         {profile?.avatar_url ? (
-          <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
+          <img src={imgUrl(profile.avatar_url)} alt="" className="h-full w-full object-cover" />
         ) : (
           <>
             <User size={24} className="sm:hidden" />

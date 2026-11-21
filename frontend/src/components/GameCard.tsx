@@ -1,6 +1,7 @@
 import { Trophy, Clock, Calendar, Hourglass } from "lucide-react";
 import type { Game } from "../types";
 import { fmtPlaytime, fmtDate, fmtHours } from "../lib/format";
+import { imgUrl } from "../lib/imgUrl";
 import { PlatformBadge } from "./PlatformBadge";
 
 // Only sgdb_cover_url is genuine landscape art (SGDB's 460x215/920x430 grids,
@@ -8,11 +9,11 @@ import { PlatformBadge } from "./PlatformBadge";
 // (portrait box art) and icon_url is a small square Steam icon — center-cropping
 // either of those to fill a wide card just slices through the artwork/logo.
 function landscapeArt(g: Game): string | null {
-  return g.sgdb_cover_url || null;
+  return imgUrl(g.sgdb_cover_url);
 }
 
 function fallbackArt(g: Game): string | null {
-  return g.igdb_cover_url || g.icon_url || null;
+  return imgUrl(g.igdb_cover_url || g.icon_url);
 }
 
 export function GameCard({

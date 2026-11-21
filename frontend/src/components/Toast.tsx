@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useRef, useState } from "react";
 import { CheckCircle2, XCircle, Info, Trophy, X } from "lucide-react";
+import { imgUrl } from "../lib/imgUrl";
 
 type ToastKind = "success" | "error" | "info" | "achievement";
 
@@ -70,7 +71,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             }`}
           >
             {t.kind === "achievement" && t.icon ? (
-              <img src={t.icon} alt="" className="mt-0.5 h-9 w-9 flex-shrink-0 rounded-md object-cover ring-1 ring-black/40" />
+              <img src={imgUrl(t.icon)} alt="" className="mt-0.5 h-9 w-9 flex-shrink-0 rounded-md object-cover ring-1 ring-black/40" />
             ) : (
               <span className="mt-0.5 flex-shrink-0">{ICONS[t.kind]}</span>
             )}

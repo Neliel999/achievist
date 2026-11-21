@@ -24,6 +24,10 @@ PUBLIC = {
     "/api/auth/setup",   # first-run: creates the admin, self-disables after
     "/api/auth/login",
     "/api/auth/logout",
+    # Same-origin image proxy: only ever returns public CDN bytes, bounded by
+    # the host allowlist in app/imgproxy.py (400 for anything else), so there
+    # is no user data to protect and <img> tags work logged out too.
+    "/api/img",
     "/{full_path:path}",  # the SPA itself; the API it calls is still gated
 }
 

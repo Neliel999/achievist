@@ -6,6 +6,7 @@ import type { AchievementSearchResult } from "../types";
 import { fmtDate } from "../lib/format";
 import { RARITY_TIER_CLASS, rarityTier } from "../lib/rarity";
 import { guideSearchUrl } from "../lib/guideLink";
+import { imgUrl } from "../lib/imgUrl";
 import { PlatformBadge } from "../components/PlatformBadge";
 
 const RARITIES = ["", "Legendary", "Epic", "Rare", "Uncommon", "Common"];
@@ -166,7 +167,7 @@ export function AchievementsPage() {
         <ul className="flex flex-col gap-1.5">
           {results.map((a) => {
             const isUnlocked = !!a.unlocked;
-            const art = a.sgdb_cover_url || a.game_icon_url;
+            const art = imgUrl(a.sgdb_cover_url || a.game_icon_url);
             return (
               <li key={`${a.platform_game_id}-${a.platform_ach_id}`}>
                 <div
@@ -181,7 +182,7 @@ export function AchievementsPage() {
                   <div className="relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-md bg-ink-900">
                     {a.icon_url ? (
                       <img
-                        src={a.icon_url}
+                        src={imgUrl(a.icon_url)}
                         alt=""
                         className={`h-full w-full object-cover ${isUnlocked ? "" : "grayscale"}`}
                         loading="lazy"

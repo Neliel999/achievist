@@ -6,6 +6,7 @@ import { platformLabel } from "../lib/platforms";
 import { fmtDate, fmtRelative } from "../lib/format";
 import { RARITY_TIER_CLASS, rarityTier } from "../lib/rarity";
 import { milestoneTier } from "../lib/milestoneTier";
+import { imgUrl } from "../lib/imgUrl";
 import type { ChaseListItem, MilestoneTrack, MilestonesResponse } from "../types";
 
 /**
@@ -78,7 +79,7 @@ function MilestoneTrackCard({
       {latest ? (
         <div className="mt-3 flex items-start gap-3">
           {latest.icon_url ? (
-            <img src={latest.icon_url} alt="" className="h-10 w-10 shrink-0 rounded" />
+            <img src={imgUrl(latest.icon_url)} alt="" className="h-10 w-10 shrink-0 rounded" />
           ) : (
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-ink-800">
               <Trophy size={16} className="text-faint" />
@@ -257,7 +258,7 @@ export function HomePage() {
                 className="flex w-full items-center gap-3 rounded-lg bg-ink-800 px-3 py-2 text-left transition hover:bg-ink-700"
               >
                 {g.icon_url ? (
-                  <img src={g.icon_url} alt="" className="h-8 w-8 shrink-0 rounded" />
+                  <img src={imgUrl(g.icon_url)} alt="" className="h-8 w-8 shrink-0 rounded" />
                 ) : (
                   <div className="h-8 w-8 shrink-0 rounded bg-ink-700" />
                 )}
@@ -302,7 +303,7 @@ export function HomePage() {
                 className="flex w-full items-center gap-3 rounded-lg bg-ink-800 px-3 py-2 text-left transition hover:bg-ink-700"
               >
                 {a.icon_url ? (
-                  <img src={a.icon_url} alt="" className="h-8 w-8 shrink-0 rounded grayscale" />
+                  <img src={imgUrl(a.icon_url)} alt="" className="h-8 w-8 shrink-0 rounded grayscale" />
                 ) : (
                   <div className="h-8 w-8 shrink-0 rounded bg-ink-700" />
                 )}
