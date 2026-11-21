@@ -120,6 +120,10 @@ ALTER TABLE platform_games ADD COLUMN IF NOT EXISTS icon_url_override TEXT;
 -- normal — so cleanup code that wants to safely act only on 360 titles
 -- needs this instead of guessing from a row's shape.
 ALTER TABLE platform_games ADD COLUMN IF NOT EXISTS is_360 BOOLEAN;
+-- PSN console tag from trophyTitlePlatform (comma-joined tokens
+-- PS3/PS4/PS5/PSVITA, e.g. "PS4" or "PS3,PSVITA"). NULL until the next
+-- sync populates it.
+ALTER TABLE platform_games ADD COLUMN IF NOT EXISTS psn_console TEXT;
 -- When achievement-level TrueAchievements/TrueSteamAchievements links were
 -- last scraped for this game, so it's only re-fetched occasionally rather
 -- than on every request.

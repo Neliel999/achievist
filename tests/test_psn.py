@@ -173,6 +173,12 @@ async def test_sync_stores_trophy_details_and_play_time(psn_api, db_conn):
     # Both regional releases count; the collection and the unrecognised title don't.
     assert game["playtime_minutes"] == (12 * 60 + 30) + 65
     assert game["last_played_at"] == datetime(2026, 10, 25, 21, 15, 30, 120000, tzinfo=timezone.utc)
+    console = await db._fetchrow(
+        db_conn,
+        "SELECT pg.psn_console FROM platform_games pg WHERE pg.platform_app_id = %s",
+        GAME,
+    )
+    assert console["psn_console"] == "PS4"
 
 
 @requires_db
@@ -211,3 +217,12 @@ async def test_sync_finds_account_by_search_when_profile_lookup_is_refused(psn_a
 
     assert [t["name"] for t in await _trophies(db_conn)] == ["First Steps", "Seasoned"]
     assert (await _user_game(db_conn, linked_id))["earned_achievements"] == 1
+
+
+def test_normalize_console():
+    assert psn._normalize_console("PS5") == "PS5"
+    assert psn._normalize_console("PS3,PSVITA") == "PS3,PSVITA"
+    assert psn._normalize_console("psvita") == "PSVITA"
+    assert psn._normalize_console("PS4, PS4") == "PS4"
+    assert psn._normalize_console("") is None
+    assert psn._normalize_console(None) is None

@@ -133,7 +133,7 @@ export function GameCard({
         </div>
 
         <div>
-          <PlatformBadge platform={game.platform} />
+          <PlatformBadge platform={game.platform} console={game.psn_console} />
         </div>
       </div>
     </button>

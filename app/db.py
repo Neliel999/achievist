@@ -616,22 +616,24 @@ async def upsert_platform_game(conn, platform: str, platform_app_id: str, name: 
                                 icon_url: str | None, total_achievements: int,
                                 store_id: str | None = None,
                                 xbox_pfn: str | None = None,
-                                is_360: bool | None = None) -> int:
+                                is_360: bool | None = None,
+                                psn_console: str | None = None) -> int:
     row = await _fetchrow(
         conn,
         """
-        INSERT INTO platform_games (platform, platform_app_id, name, icon_url, total_achievements, store_id, xbox_pfn, is_360)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO platform_games (platform, platform_app_id, name, icon_url, total_achievements, store_id, xbox_pfn, is_360, psn_console)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT (platform, platform_app_id) DO UPDATE
             SET name = EXCLUDED.name,
                 icon_url = EXCLUDED.icon_url,
                 total_achievements = EXCLUDED.total_achievements,
                 store_id = COALESCE(platform_games.store_id, EXCLUDED.store_id),
                 xbox_pfn = COALESCE(platform_games.xbox_pfn, EXCLUDED.xbox_pfn),
-                is_360 = COALESCE(EXCLUDED.is_360, platform_games.is_360)
+                is_360 = COALESCE(EXCLUDED.is_360, platform_games.is_360),
+                psn_console = COALESCE(EXCLUDED.psn_console, platform_games.psn_console)
         RETURNING id
         """,
-        platform, platform_app_id, name, icon_url, total_achievements, store_id, xbox_pfn, is_360,
+        platform, platform_app_id, name, icon_url, total_achievements, store_id, xbox_pfn, is_360, psn_console,
     )
     return row["id"]
 

@@ -107,3 +107,9 @@ export const PLATFORM_META: Record<string, PlatformMeta> = {
 export function platformLabel(platform: string): string {
   return PLATFORM_META[platform]?.label ?? platform;
 }
+
+// "PS3,PSVITA" -> "PS3, PS Vita"; unknown tokens pass through as-is.
+export function psnConsoleLabel(console: string): string {
+  const map: Record<string, string> = { PS3: "PS3", PS4: "PS4", PS5: "PS5", PSVITA: "PS Vita" };
+  return console.split(",").map((t) => map[t.trim()] ?? t.trim()).join(", ");
+}
