@@ -11,6 +11,7 @@ import { gameDirectUrl, guideSearchUrl } from "../lib/guideLink";
 import { ChangeCoverModal } from "../components/ChangeCoverModal";
 import { useAuth } from "../lib/auth";
 import { backgroundSizeFor, bannerArt } from "../lib/art";
+import { imgUrl } from "../lib/imgUrl";
 
 type StatusFilter = "all" | "unlocked" | "locked";
 type SortKey = "default" | "name" | "rarity" | "points" | "unlocked_at";
@@ -57,7 +58,7 @@ export function GameDetailPage() {
   // keeps "cover". Without this, cover upscales a portrait to viewport width
   // and only a cropped, low-res band shows.
   useEffect(() => {
-    const url = game ? bannerArt(game) : null;
+    const url = game ? imgUrl(bannerArt(game)) : null;
     if (!url) return;
     setBackdropFit("cover");
     const img = new Image();
@@ -162,7 +163,7 @@ export function GameDetailPage() {
     );
   }
 
-  const art = game ? bannerArt(game) : null;
+  const art = game ? imgUrl(bannerArt(game)) : null;
   const pct = Math.round(game?.completion_pct ?? 0);
   const storeMeta = game ? PLATFORM_META[game.platform] : null;
   const storeUrl = game && storeMeta?.storeUrl ? storeMeta.storeUrl(game) : null;
@@ -363,7 +364,7 @@ export function GameDetailPage() {
                       <div className="relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-md bg-ink-900">
                         {a.icon_url ? (
                           <img
-                            src={a.icon_url}
+                            src={imgUrl(a.icon_url)}
                             alt=""
                             className={`h-full w-full object-cover ${unlocked ? "" : "grayscale"}`}
                             loading="lazy"

@@ -4,6 +4,7 @@ import { Flame, Clock, Trophy } from "lucide-react";
 import { api } from "../api";
 import type { Activity } from "../types";
 import { fmtPlaytime, fmtDate, fmtRelative } from "../lib/format";
+import { imgUrl } from "../lib/imgUrl";
 import { PlatformBadge } from "../components/PlatformBadge";
 
 function Heatmap({ data }: { data: { day: string; count: number }[] }) {
@@ -137,7 +138,7 @@ export function ActivityPage() {
               >
                 <div className="h-12 w-20 flex-shrink-0 overflow-hidden rounded bg-ink-900">
                   {f.cover_url ? (
-                    <img src={f.cover_url} alt="" className="h-full w-full object-cover" loading="lazy" />
+                    <img src={imgUrl(f.cover_url)} alt="" className="h-full w-full object-cover" loading="lazy" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-faint">
                       <Trophy size={16} />
@@ -157,7 +158,7 @@ export function ActivityPage() {
                 </div>
                 <div className="hidden flex-shrink-0 gap-1 sm:flex">
                   {f.icons.slice(0, 6).map((ic, i) => (
-                    <img key={i} src={ic} alt="" className="h-8 w-8 rounded object-cover" loading="lazy" />
+                    <img key={i} src={imgUrl(ic)} alt="" className="h-8 w-8 rounded object-cover" loading="lazy" />
                   ))}
                 </div>
               </button>
