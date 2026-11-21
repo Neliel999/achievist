@@ -108,8 +108,20 @@ export function platformLabel(platform: string): string {
   return PLATFORM_META[platform]?.label ?? platform;
 }
 
-// "PS3,PSVITA" -> "PS3, PS Vita"; unknown tokens pass through as-is.
+// "PS3,PSVITA" -> "PS3, PS Vita"; PSPC is PSN's token for a PC-shared trophy
+// list (PS5+PC cross-buy), shown as PC; unknown tokens pass through as-is.
 export function psnConsoleLabel(console: string): string {
-  const map: Record<string, string> = { PS3: "PS3", PS4: "PS4", PS5: "PS5", PSVITA: "PS Vita" };
+  const map: Record<string, string> = { PS3: "PS3", PS4: "PS4", PS5: "PS5", PSVITA: "PS Vita", PC: "PC", PSPC: "PC" };
   return console.split(",").map((t) => map[t.trim()] ?? t.trim()).join(", ");
 }
+
+// Console chip colors mimicking the PS5 system's trophy-tab tags: PS5 solid
+// white with black text, PS4/PS3/PS Vita solid black with white text, PC neutral.
+export const PSN_CONSOLE_CHIP: Record<string, string> = {
+  PS5: "bg-white text-black border-white",
+  PS4: "bg-black text-white border-neutral-600",
+  PS3: "bg-black text-white border-neutral-600",
+  PSVITA: "bg-black text-white border-neutral-600",
+  PC: "bg-neutral-600 text-white border-neutral-600",
+  PSPC: "bg-neutral-600 text-white border-neutral-600",
+};

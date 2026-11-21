@@ -224,5 +224,7 @@ def test_normalize_console():
     assert psn._normalize_console("PS3,PSVITA") == "PS3,PSVITA"
     assert psn._normalize_console("psvita") == "PSVITA"
     assert psn._normalize_console("PS4, PS4") == "PS4"
+    # PSPC is PSN's token for a PC-shared trophy list (PS5+PC cross-buy)
+    assert psn._normalize_console("PS5,PSPC") == "PS5,PC"
     assert psn._normalize_console("") is None
     assert psn._normalize_console(None) is None

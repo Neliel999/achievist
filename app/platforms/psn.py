@@ -47,15 +47,16 @@ def _play_minutes(duration: str | None) -> int:
 def _normalize_console(value: str | None) -> str | None:
     """Normalize PSN trophyTitlePlatform to uppercase comma-joined tokens.
 
-    PSN returns e.g. "PS4", "PS5" or "PS3,PSVITA" for cross-buy titles;
-    tokens are uppercased, deduped preserving order, and unknown tokens are
-    kept (forward-compat). Empty/missing -> None.
+    PSN returns e.g. "PS4", "PS5", "PS3,PSVITA" for cross-buy titles, and
+    "PSPC" for PS5 games whose trophy list is shared with PC — canonicalized
+    to "PC". Tokens are uppercased, deduped preserving order; unknown tokens
+    are kept (forward-compat). Empty/missing -> None.
     """
     if not value:
         return None
     tokens = []
     for tok in value.split(","):
-        tok = tok.strip().upper()
+        tok = {"PSPC": "PC"}.get(tok.strip().upper(), tok.strip().upper())
         if tok and tok not in tokens:
             tokens.append(tok)
     return ",".join(tokens) if tokens else None
