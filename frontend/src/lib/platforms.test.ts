@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PLATFORM_META, platformLabel } from "./platforms";
+import { PLATFORM_META, PSN_CONSOLE_CHIP, platformLabel, psnConsoleLabel } from "./platforms";
 
 const game = (over: Partial<{ platform_app_id: string; store_id: string | null; name: string }> = {}) => ({
   platform_app_id: "12345",
@@ -65,5 +65,29 @@ describe("store links", () => {
       expect(meta.badge, `badge for ${key}`).toBeTruthy();
       expect(meta.dot, `dot for ${key}`).toMatch(/^#[0-9a-f]{6}$/i);
     }
+  });
+});
+
+describe("psnConsoleLabel", () => {
+  it("maps known tokens, including PSPC to PC", () => {
+    expect(psnConsoleLabel("PS5")).toBe("PS5");
+    expect(psnConsoleLabel("PS3,PSVITA")).toBe("PS3, PS Vita");
+    expect(psnConsoleLabel("PS5,PSPC")).toBe("PS5, PC");
+  });
+  it("passes unknown tokens through", () => {
+    expect(psnConsoleLabel("PS6")).toBe("PS6");
+  });
+});
+
+describe("PSN_CONSOLE_CHIP", () => {
+  it("gives PS5 a white tag with black text and the rest black tags, like the PS5 trophy tab", () => {
+    expect(PSN_CONSOLE_CHIP.PS5).toContain("bg-white");
+    expect(PSN_CONSOLE_CHIP.PS5).toContain("text-black");
+    for (const token of ["PS4", "PS3", "PSVITA"]) {
+      expect(PSN_CONSOLE_CHIP[token]).toContain("bg-black");
+      expect(PSN_CONSOLE_CHIP[token]).toContain("text-white");
+    }
+    expect(PSN_CONSOLE_CHIP.PC).toBeTruthy();
+    expect(PSN_CONSOLE_CHIP.PSPC).toBeTruthy();
   });
 });

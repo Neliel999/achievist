@@ -73,7 +73,7 @@ export function GameRow({
       <span className="w-9 flex-shrink-0 text-right text-xs font-medium tabular-nums text-muted">{pct}%</span>
 
       <div className="hidden flex-shrink-0 sm:block">
-        <PlatformBadge platform={game.platform} />
+        <PlatformBadge platform={game.platform} console={game.psn_console} />
       </div>
     </button>
   );

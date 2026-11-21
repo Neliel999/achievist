@@ -44,6 +44,24 @@ def _play_minutes(duration: str | None) -> int:
     return hours * 60 + minutes
 
 
+def _normalize_console(value: str | None) -> str | None:
+    """Normalize PSN trophyTitlePlatform to uppercase comma-joined tokens.
+
+    PSN returns e.g. "PS4", "PS5", "PS3,PSVITA" for cross-buy titles, and
+    "PSPC" for PS5 games whose trophy list is shared with PC — canonicalized
+    to "PC". Tokens are uppercased, deduped preserving order; unknown tokens
+    are kept (forward-compat). Empty/missing -> None.
+    """
+    if not value:
+        return None
+    tokens = []
+    for tok in value.split(","):
+        tok = {"PSPC": "PC"}.get(tok.strip().upper(), tok.strip().upper())
+        if tok and tok not in tokens:
+            tokens.append(tok)
+    return ",".join(tokens) if tokens else None
+
+
 def _parse_datetime(value: str | None) -> datetime | None:
     if not value:
         return None
@@ -229,12 +247,16 @@ class PSNPlatform(Platform):
                 if not np_comm_id or total == 0:
                     continue
 
-                is_ps5 = "PS5" in (title.get("trophyTitlePlatform") or "")
+                platform_str = title.get("trophyTitlePlatform") or ""
+                is_ps5 = "PS5" in platform_str
                 service_name = "trophy2" if is_ps5 else "trophy"
 
                 self._inc("games_seen")
                 minutes, last_played_at = playtime.get(np_comm_id, (0, None))
-                pg_id = await db.upsert_platform_game(conn, "psn", np_comm_id, name, icon, total)
+                pg_id = await db.upsert_platform_game(
+                    conn, "psn", np_comm_id, name, icon, total,
+                    psn_console=_normalize_console(platform_str),
+                )
                 await db.upsert_user_game(conn, linked_id, pg_id, minutes, earned_total, total, last_played_at)
 
                 cached = earned_cache.get(np_comm_id)
