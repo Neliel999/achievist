@@ -466,6 +466,7 @@ export function GameDetailPage() {
       {changingCover && game && (
         <ChangeCoverModal
           gameId={game.platform_game_id}
+          searchName={game.search_name_override ?? game.name}
           initialQuery={game.name}
           onClose={() => setChangingCover(false)}
           onChanged={async () => {

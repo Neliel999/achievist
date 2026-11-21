@@ -167,6 +167,8 @@ export interface GameDetail extends Game {
   // is the COALESCE of this with the IGDB cover; the detail-page backdrop
   // prefers the explicit portrait over the SGDB cover.
   portrait_cover_url: string | null;
+  // Manual search-title override for SGDB/IGDB enrichment (NULL = synced name)
+  search_name_override: string | null;
 }
 
 export interface SgdbSearchResult {
