@@ -143,6 +143,7 @@ export interface Game {
   name: string;
   icon_url: string | null;
   store_id: string | null;
+  psn_console: string | null;
   sgdb_cover_url: string | null;
   guide_url: string | null;
   igdb_cover_url: string | null;

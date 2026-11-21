@@ -6,7 +6,7 @@ import type { Game, Summary } from "../types";
 import { GameCard } from "../components/GameCard";
 import { GameRow } from "../components/GameRow";
 import { GameCardSkeleton, GameRowSkeleton } from "../components/Skeleton";
-import { platformLabel } from "../lib/platforms";
+import { platformLabel, psnConsoleLabel } from "../lib/platforms";
 
 // Scroll position + how many items were loaded when we left, so returning via
 // back/forward can reload enough pages before restoring the scroll offset —
@@ -58,6 +58,7 @@ export function GamesPage({ summary }: { summary: Summary | null }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const sort = searchParams.get("sort") || "recent";
   const platform = searchParams.get("platform") || "";
+  const consoleFilter = searchParams.get("console") || "";
   const completion = searchParams.get("completion") || "";
   const search = searchParams.get("search") || "";
   const searchDebounced = useDebounce(search, 300);
@@ -90,6 +91,15 @@ export function GamesPage({ summary }: { summary: Summary | null }) {
     new Set([...(summary?.by_platform.map((p) => p.platform) ?? []), ...accountPlatforms]),
   );
 
+  // Console filter options for PSN (PS5/PS4/PS Vita/PS3), from the user's games.
+  const [psnConsoles, setPsnConsoles] = useState<string[]>([]);
+  useEffect(() => {
+    if (platform !== "psn") return;
+    api.psnConsoles()
+      .then((r) => setPsnConsoles(r.consoles))
+      .catch(() => setPsnConsoles([]));
+  }, [platform]);
+
   const load = useCallback(
     async (pageToLoad: number, replace: boolean) => {
       setLoading(true);
@@ -97,6 +107,7 @@ export function GamesPage({ summary }: { summary: Summary | null }) {
         const res = await api.games({
           sort,
           platform: platform || undefined,
+          console: platform === "psn" ? consoleFilter || undefined : undefined,
           completion: completion || undefined,
           search: searchDebounced || undefined,
           page: pageToLoad,
@@ -120,7 +131,7 @@ export function GamesPage({ summary }: { summary: Summary | null }) {
         setInitialLoading(false);
       }
     },
-    [sort, platform, completion, searchDebounced],
+    [sort, platform, consoleFilter, completion, searchDebounced],
   );
 
   // reload from page 1 whenever filters change
@@ -230,7 +241,10 @@ export function GamesPage({ summary }: { summary: Summary | null }) {
 
         <select
           value={platform}
-          onChange={(e) => updateParam("platform", e.target.value)}
+          onChange={(e) => {
+            updateParam("platform", e.target.value);
+            if (e.target.value !== "psn") updateParam("console", "");
+          }}
           className="rounded-lg border border-line bg-ink-850 px-3 py-2 text-sm text-slate-200 outline-none"
         >
           <option value="">All platforms</option>
@@ -238,6 +252,19 @@ export function GamesPage({ summary }: { summary: Summary | null }) {
             <option key={p} value={p}>{platformLabel(p)}</option>
           ))}
         </select>
+
+        {platform === "psn" && (
+          <select
+            value={consoleFilter}
+            onChange={(e) => updateParam("console", e.target.value)}
+            className="rounded-lg border border-line bg-ink-850 px-3 py-2 text-sm text-slate-200 outline-none"
+          >
+            <option value="">All consoles</option>
+            {psnConsoles.map((c) => (
+              <option key={c} value={c}>{psnConsoleLabel(c)}</option>
+            ))}
+          </select>
+        )}
 
         <div className="flex w-full items-center gap-2 rounded-lg border border-line bg-ink-850 px-3 py-2 sm:ml-auto sm:w-auto">
           <Search size={15} className="text-faint" />

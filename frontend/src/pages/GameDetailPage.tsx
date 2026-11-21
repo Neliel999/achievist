@@ -219,7 +219,7 @@ export function GameDetailPage() {
                 )}
               </div>
               <div className="mt-3 flex items-center gap-2">
-                {game && <PlatformBadge platform={game.platform} />}
+                {game && <PlatformBadge platform={game.platform} console={game.psn_console} />}
                 {game && game.total_points > 0 && (
                   <span className="text-xs text-muted">{fmtNum(game.total_points)} pts</span>
                 )}
