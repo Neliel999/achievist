@@ -838,8 +838,9 @@ async def games(
         filters.append("pg.platform = %s")
         params.append(platform)
     if console:
-        filters.append("pg.psn_console = %s")
-        params.append(console)
+        # Token match: a game tagged "PS5,PS4" appears under the PS5 filter too.
+        filters.append("strpos(',' || pg.psn_console || ',', %s) > 0")
+        params.append(f",{console},")
     if search:
         filters.append("pg.name ILIKE %s")
         params.append(f"%{search}%")
@@ -906,22 +907,23 @@ async def games(
 
 @app.get("/api/psn/consoles")
 async def psn_consoles(user: dict = Depends(require_user)):
-    """Distinct PSN console tags (platform_games.psn_console) across the user's games."""
+    """Distinct individual PSN console tokens (PS5/PS4/PSVITA/PS3) across the user's games."""
     pool = await db.get_pool()
     async with pool.connection() as conn:
         rows = await _fetch(
             conn,
             """
-            SELECT DISTINCT pg.psn_console
+            SELECT DISTINCT trim(t) AS console
             FROM platform_games pg
             JOIN user_games ug ON ug.platform_game_id = pg.id
             JOIN linked_accounts la ON la.id = ug.linked_account_id AND la.user_id = %s
+            CROSS JOIN LATERAL unnest(string_to_array(pg.psn_console, ',')) AS t
             WHERE pg.platform = 'psn' AND pg.psn_console IS NOT NULL
-            ORDER BY pg.psn_console
+            ORDER BY 1
             """,
             user["id"],
         )
-    return {"consoles": [r["psn_console"] for r in rows]}
+    return {"consoles": [r["console"] for r in rows]}
 
 
 

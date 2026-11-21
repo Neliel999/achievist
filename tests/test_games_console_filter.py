@@ -1,7 +1,8 @@
 """
 Tests for the PSN console tag (platform_games.psn_console): GET /api/games
-carries it per game and filters on ?console= (exact match on the stored
-comma-joined tag), and GET /api/psn/consoles lists the user's distinct tags.
+carries it per game and filters on ?console= as a token match (a game tagged
+"PS3,PSVITA" appears under the PS3 and the PSVITA filters), and
+GET /api/psn/consoles lists the user's distinct individual console tokens.
 """
 
 import httpx
@@ -42,27 +43,23 @@ async def test_games_response_includes_psn_console(db_conn, client):
     by_name = {g["name"]: g["psn_console"] for g in resp.json()["games"]}
     assert by_name == {"PS5 Game": "PS5", "PS4 Game": "PS4", "Cross Game": "PS3,PSVITA"}
 
-
-async def test_games_console_filter_matches_exact_tag(db_conn, client):
+async def test_games_console_filter_matches_any_token(db_conn, client):
     await _login_with_psn_games(db_conn, client)
 
     resp = await client.get("/api/games", params={"platform": "psn", "console": "PS5"})
     assert resp.status_code == 200
     assert [g["name"] for g in resp.json()["games"]] == ["PS5 Game"]
 
-    # A single-console filter does not match multi-console rows; the
-    # multi-console tag is only reachable via its own option.
-    resp = await client.get("/api/games", params={"platform": "psn", "console": "PSVITA"})
-    assert resp.status_code == 200
-    assert [g["name"] for g in resp.json()["games"]] == []
-
-    resp = await client.get("/api/games", params={"platform": "psn", "console": "PS3,PSVITA"})
-    assert [g["name"] for g in resp.json()["games"]] == ["Cross Game"]
+    # Token match: the multi-console row shows up under each of its consoles.
+    for token in ("PS3", "PSVITA"):
+        resp = await client.get("/api/games", params={"platform": "psn", "console": token})
+        assert resp.status_code == 200
+        assert [g["name"] for g in resp.json()["games"]] == ["Cross Game"]
 
 
-async def test_psn_consoles_lists_distinct_tags(db_conn, client):
+async def test_psn_consoles_lists_distinct_tokens(db_conn, client):
     await _login_with_psn_games(db_conn, client)
 
     resp = await client.get("/api/psn/consoles")
     assert resp.status_code == 200
-    assert resp.json()["consoles"] == ["PS3,PSVITA", "PS4", "PS5"]
+    assert resp.json()["consoles"] == ["PS3", "PS4", "PS5", "PSVITA"]
