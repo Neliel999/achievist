@@ -197,6 +197,12 @@ export const api = {
       `/api/art-set?platform_game_id=${platformGameId}&field=${field}&url=${encodeURIComponent(url)}`,
       "POST",
     ),
+  // Per-game search-title override used by SGDB/IGDB enrichment; empty name resets
+  setSearchName: (platformGameId: number, name: string) =>
+    send<{ status: string }>(
+      `/api/games/${platformGameId}/search-name?name=${encodeURIComponent(name)}`,
+      "POST",
+    ),
   sgdbRefresh: (force: boolean) =>
     send<{ status: string }>(`/api/sgdb-refresh?force=${force}`, "POST"),
   hltbRefresh: () => send<{ status: string }>("/api/hltb-refresh", "POST"),
