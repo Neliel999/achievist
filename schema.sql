@@ -112,6 +112,11 @@ ALTER TABLE platform_games ADD COLUMN IF NOT EXISTS sgdb_cover_url TEXT;
 -- icon_url; both are read through COALESCE, so NULL means "automatic default".
 ALTER TABLE platform_games ADD COLUMN IF NOT EXISTS portrait_cover_url TEXT;
 ALTER TABLE platform_games ADD COLUMN IF NOT EXISTS icon_url_override TEXT;
+-- Manual per-game search-title override used by SGDB/IGDB enrichment for
+-- games whose synced title (e.g. Japanese) doesn't match their romanized
+-- SGDB/IGDB entry. NULL/'' = search with the synced name.
+ALTER TABLE platform_games ADD COLUMN IF NOT EXISTS search_name_override TEXT;
+
 -- Whether this is a legacy Xbox 360 title (Xbox titleHistory's
 -- achievement.sourceVersion == 1). NULL until the next sync populates it.
 -- Locked achievements never get a row at all for a 360 title (there's no
