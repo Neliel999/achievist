@@ -467,7 +467,7 @@ export function GameDetailPage() {
         <ChangeCoverModal
           gameId={game.platform_game_id}
           searchName={game.search_name_override ?? game.name}
-          initialQuery={game.name}
+          initialQuery={game.search_name_override ?? game.name}
           onClose={() => setChangingCover(false)}
           onChanged={async () => {
             setGame(await api.gameDetail(gameId));

@@ -121,10 +121,15 @@ export function ChangeCoverModal({
   }
 
   async function saveSearchTitle() {
+    const term = searchTitle.trim();
     setSavingSearch(true);
     try {
-      await api.setSearchName(gameId, searchTitle.trim());
+      await api.setSearchName(gameId, term);
       toast.success("Search title saved — re-run the IGDB/SGDB refresh to fetch art");
+      // Search SGDB with the saved term right away, so the picker immediately
+      // shows the right game's art instead of the raw (e.g. Japanese) title.
+      setQuery(term);
+      runSearch(term);
       onChanged();
     } catch (e) {
       toast.error(String(e instanceof Error ? e.message : e));
