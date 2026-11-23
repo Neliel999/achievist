@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Search, ImageOff, Link } from "lucide-react";
+import { X, Search, ImageOff, Link, Type } from "lucide-react";
 import { api } from "../api";
 import type { SgdbSearchResult } from "../types";
 import { useToast } from "./Toast";
@@ -25,11 +25,13 @@ function assetsFor(field: ArtField, g: SgdbSearchResult): { u: string; cls: stri
 export function ChangeCoverModal({
   gameId,
   initialQuery,
+  searchName,
   onClose,
   onChanged,
 }: {
   gameId: number;
   initialQuery: string;
+  searchName: string;
   onClose: () => void;
   onChanged: () => void;
 }) {
@@ -39,6 +41,8 @@ export function ChangeCoverModal({
   const [error, setError] = useState<string | null>(null);
   const [applying, setApplying] = useState<string | null>(null);
   const [customUrl, setCustomUrl] = useState("");
+  const [searchTitle, setSearchTitle] = useState(searchName);
+  const [savingSearch, setSavingSearch] = useState(false);
   const toast = useToast();
   const debounceRef = useRef<number>();
   const { titleId, dialogProps } = useModal(onClose);
@@ -116,6 +120,24 @@ export function ChangeCoverModal({
     }
   }
 
+  async function saveSearchTitle() {
+    const term = searchTitle.trim();
+    setSavingSearch(true);
+    try {
+      await api.setSearchName(gameId, term);
+      toast.success("Search title saved — re-run the IGDB/SGDB refresh to fetch art");
+      // Search SGDB with the saved term right away, so the picker immediately
+      // shows the right game's art instead of the raw (e.g. Japanese) title.
+      setQuery(term);
+      runSearch(term);
+      onChanged();
+    } catch (e) {
+      toast.error(String(e instanceof Error ? e.message : e));
+    } finally {
+      setSavingSearch(false);
+    }
+  }
+
   const activeField = FIELDS.find((f) => f.id === field)!;
 
   return (
@@ -189,6 +211,24 @@ export function ChangeCoverModal({
               className="flex-shrink-0 rounded-md bg-accent px-2.5 py-1 text-xs font-medium text-white transition hover:brightness-110 disabled:opacity-50"
             >
               Use URL
+            </button>
+          </div>
+
+          <div className="mt-3 flex items-center gap-2 rounded-lg border border-line bg-ink-900 px-3 py-2">
+            <Type size={15} className="text-faint" />
+            <input
+              value={searchTitle}
+              onChange={(e) => setSearchTitle(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && saveSearchTitle()}
+              placeholder="Search title used for SGDB/IGDB lookup (e.g. the English/romanized name)…"
+              className="w-full bg-transparent text-sm text-slate-100 outline-none placeholder:text-faint"
+            />
+            <button
+              onClick={saveSearchTitle}
+              disabled={savingSearch || !searchTitle.trim()}
+              className="flex-shrink-0 rounded-md bg-accent px-2.5 py-1 text-xs font-medium text-white transition hover:brightness-110 disabled:opacity-50"
+            >
+              Save
             </button>
           </div>
 

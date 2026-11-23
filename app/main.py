@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from urllib.parse import quote
 
 import httpx
 from contextlib import asynccontextmanager
@@ -64,12 +65,12 @@ async def _enrich_igdb(retry_failed: bool = False) -> None:
         if retry_failed:
             rows = await _fetch(
                 conn,
-                "SELECT id, name, platform FROM platform_games WHERE (igdb_id IS NULL OR igdb_id = -1) AND total_achievements > 0",
+                "SELECT id, name, platform, search_name_override FROM platform_games WHERE (igdb_id IS NULL OR igdb_id = -1) AND total_achievements > 0",
             )
         else:
             rows = await _fetch(
                 conn,
-                "SELECT id, name, platform FROM platform_games WHERE igdb_id IS NULL AND total_achievements > 0",
+                "SELECT id, name, platform, search_name_override FROM platform_games WHERE igdb_id IS NULL AND total_achievements > 0",
             )
     log.info("IGDB enrichment: %d games to look up", len(rows))
     sem = asyncio.Semaphore(5)
@@ -77,11 +78,12 @@ async def _enrich_igdb(retry_failed: bool = False) -> None:
     async def _lookup(row):
         async with sem:
             try:
-                result = await search_cover(row["name"], row["platform"])
+                term = row["search_name_override"] or row["name"]
+                result = await search_cover(term, row["platform"])
                 if result:
-                    igdb_id, cover_url = result
+                    igdb_id, cover_url, canonical_name = result
                     async with pool.connection() as conn:
-                        await db.upsert_igdb_game(conn, igdb_id, row["name"], cover_url)
+                        await db.upsert_igdb_game(conn, igdb_id, canonical_name, cover_url)
                         await db.set_igdb_id(conn, row["id"], igdb_id)
                     log.info("IGDB cover found for '%s'", row["name"])
                 else:
@@ -112,17 +114,32 @@ async def _enrich_sgdb(retry_failed: bool = False, force: bool = False) -> None:
             )
             rows = await _fetch(
                 conn,
-                "SELECT id, name FROM platform_games WHERE total_achievements > 0",
+                """
+                SELECT pg.id, pg.name, COALESCE(NULLIF(pg.search_name_override, ''), ig.name, pg.name) AS search_name
+                FROM platform_games pg
+                LEFT JOIN igdb_games ig ON ig.id = pg.igdb_id AND pg.igdb_id > 0
+                WHERE pg.total_achievements > 0
+                """
             )
         elif retry_failed:
             rows = await _fetch(
                 conn,
-                "SELECT id, name FROM platform_games WHERE (sgdb_cover_url IS NULL OR sgdb_cover_url = '') AND total_achievements > 0",
+                """
+                SELECT pg.id, pg.name, COALESCE(NULLIF(pg.search_name_override, ''), ig.name, pg.name) AS search_name
+                FROM platform_games pg
+                LEFT JOIN igdb_games ig ON ig.id = pg.igdb_id AND pg.igdb_id > 0
+                WHERE (pg.sgdb_cover_url IS NULL OR pg.sgdb_cover_url = '') AND pg.total_achievements > 0
+                """
             )
         else:
             rows = await _fetch(
                 conn,
-                "SELECT id, name FROM platform_games WHERE sgdb_cover_url IS NULL AND total_achievements > 0",
+                """
+                SELECT pg.id, pg.name, COALESCE(NULLIF(pg.search_name_override, ''), ig.name, pg.name) AS search_name
+                FROM platform_games pg
+                LEFT JOIN igdb_games ig ON ig.id = pg.igdb_id AND pg.igdb_id > 0
+                WHERE pg.sgdb_cover_url IS NULL AND pg.total_achievements > 0
+                """
             )
     log.info("SGDB enrichment: %d games to look up", len(rows))
     sem = asyncio.Semaphore(3)
@@ -130,7 +147,7 @@ async def _enrich_sgdb(retry_failed: bool = False, force: bool = False) -> None:
     async def _lookup(row):
         async with sem:
             try:
-                url = await search_grid(row["name"])
+                url = await search_grid(row["search_name"])
                 async with pool.connection() as conn:
                     await db.set_sgdb_cover(conn, row["id"], url or "")
                 if url:
@@ -1036,6 +1053,7 @@ async def game_detail(platform_game_id: int, user: dict = Depends(require_user))
                 COALESCE(pg.icon_url_override, pg.icon_url) AS icon_url,
                 pg.store_id,
                 pg.psn_console,
+                pg.search_name_override,
                 pg.sgdb_cover_url,
                 pg.guide_url,
                 pg.hltb_main,
@@ -2315,7 +2333,7 @@ async def sgdb_search(q: str, _user: dict = Depends(require_user)):
             art = await _sgdb_art_for(client, headers, base, game_id)
             return {"games": [{"id": game_id, "name": f"Game ID {game_id}", **art}]}
 
-        resp = await client.get(f"{base}/search/autocomplete/{q}", headers=headers)
+        resp = await client.get(f"{base}/search/autocomplete/{quote(q, safe='')}", headers=headers)
         if resp.status_code != 200:
             return {"games": []}
         games = resp.json().get("data") or []
@@ -2350,6 +2368,33 @@ async def art_set(platform_game_id: int, field: str, url: str, _user: dict = Dep
     pool = await db.get_pool()
     async with pool.connection() as conn:
         game_id = await db.set_game_art(conn, platform_game_id, field, url)
+    if game_id is None:
+        raise HTTPException(status_code=404, detail="game not found")
+    return {"status": "ok"}
+
+
+@app.post("/api/games/{platform_game_id}/search-name")
+async def set_game_search_name(platform_game_id: int, name: str = "", _user: dict = Depends(require_user)):
+    """
+    Set or reset the search title used for SGDB/IGDB enrichment (for games whose
+    synced title, e.g. Japanese, doesn't match their romanized SGDB/IGDB entry).
+    An empty name resets to the synced name. Also clears cached lookup failures
+    (igdb_id = -1, sgdb_cover_url = '') so the next /api/igdb-refresh /
+    /api/sgdb-refresh?retry_failed=true retries with the new term; real prior
+    matches (igdb_id > 0, non-empty cover) are kept.
+    """
+    pool = await db.get_pool()
+    async with pool.connection() as conn:
+        game_id = await db.set_search_name(conn, platform_game_id, name)
+        if game_id is not None:
+            await conn.execute(
+                "UPDATE platform_games SET igdb_id = NULL WHERE id = %s AND igdb_id = -1",
+                (platform_game_id,),
+            )
+            await conn.execute(
+                "UPDATE platform_games SET sgdb_cover_url = NULL WHERE id = %s AND sgdb_cover_url = ''",
+                (platform_game_id,),
+            )
     if game_id is None:
         raise HTTPException(status_code=404, detail="game not found")
     return {"status": "ok"}

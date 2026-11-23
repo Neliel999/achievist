@@ -871,6 +871,17 @@ async def set_game_art(conn, platform_game_id: int, field: str, url: str) -> int
     return row["id"] if row else None
 
 
+async def set_search_name(conn, platform_game_id: int, name: str) -> int | None:
+    """Set/reset the search-title override used by SGDB/IGDB enrichment.
+    '' resets to NULL. Returns the game id, or None if it does not exist."""
+    row = await _fetchrow(
+        conn,
+        "UPDATE platform_games SET search_name_override = NULLIF(%s, '') WHERE id = %s RETURNING id",
+        name, platform_game_id,
+    )
+    return row["id"] if row else None
+
+
 async def set_store_id(conn, platform_game_id: int, store_id: str) -> None:
     await conn.execute(
         "UPDATE platform_games SET store_id = %s WHERE id = %s",
