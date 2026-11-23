@@ -139,3 +139,22 @@ class TestSearchGrid:
         )
         await search_grid("Some Game®™©")
         assert any("/search/autocomplete/Some%20Game" in p for p in seen_paths)
+
+    async def test_non_ascii_and_control_chars_are_url_encoded(self, monkeypatch):
+        # Raw interpolation of a Japanese title or a control character into the
+        # URL raised httpx InvalidURL before the request ever went out.
+        monkeypatch.setattr(config, "SGDB_API_KEY", "key")
+        seen_paths = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            seen_paths.append(str(request.url))
+            return _json({"success": True, "data": []})
+
+        real_async_client = httpx.AsyncClient
+        monkeypatch.setattr(
+            httpx, "AsyncClient", lambda **kw: real_async_client(transport=httpx.MockTransport(handler))
+        )
+        await search_grid("英雄伝説 黎の軌跡")
+        await search_grid("Bad\nName")
+        assert any("/search/autocomplete/%E8%8B%B1%E9%9B%84" in p for p in seen_paths)
+        assert any("/search/autocomplete/Bad%0AName" in p for p in seen_paths)

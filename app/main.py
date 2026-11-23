@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from urllib.parse import quote
 
 import httpx
 from contextlib import asynccontextmanager
@@ -114,7 +115,7 @@ async def _enrich_sgdb(retry_failed: bool = False, force: bool = False) -> None:
             rows = await _fetch(
                 conn,
                 """
-                SELECT pg.id, COALESCE(NULLIF(pg.search_name_override, ''), ig.name, pg.name) AS search_name
+                SELECT pg.id, pg.name, COALESCE(NULLIF(pg.search_name_override, ''), ig.name, pg.name) AS search_name
                 FROM platform_games pg
                 LEFT JOIN igdb_games ig ON ig.id = pg.igdb_id AND pg.igdb_id > 0
                 WHERE pg.total_achievements > 0
@@ -124,7 +125,7 @@ async def _enrich_sgdb(retry_failed: bool = False, force: bool = False) -> None:
             rows = await _fetch(
                 conn,
                 """
-                SELECT pg.id, COALESCE(NULLIF(pg.search_name_override, ''), ig.name, pg.name) AS search_name
+                SELECT pg.id, pg.name, COALESCE(NULLIF(pg.search_name_override, ''), ig.name, pg.name) AS search_name
                 FROM platform_games pg
                 LEFT JOIN igdb_games ig ON ig.id = pg.igdb_id AND pg.igdb_id > 0
                 WHERE (pg.sgdb_cover_url IS NULL OR pg.sgdb_cover_url = '') AND pg.total_achievements > 0
@@ -134,7 +135,7 @@ async def _enrich_sgdb(retry_failed: bool = False, force: bool = False) -> None:
             rows = await _fetch(
                 conn,
                 """
-                SELECT pg.id, COALESCE(NULLIF(pg.search_name_override, ''), ig.name, pg.name) AS search_name
+                SELECT pg.id, pg.name, COALESCE(NULLIF(pg.search_name_override, ''), ig.name, pg.name) AS search_name
                 FROM platform_games pg
                 LEFT JOIN igdb_games ig ON ig.id = pg.igdb_id AND pg.igdb_id > 0
                 WHERE pg.sgdb_cover_url IS NULL AND pg.total_achievements > 0
@@ -2332,7 +2333,7 @@ async def sgdb_search(q: str, _user: dict = Depends(require_user)):
             art = await _sgdb_art_for(client, headers, base, game_id)
             return {"games": [{"id": game_id, "name": f"Game ID {game_id}", **art}]}
 
-        resp = await client.get(f"{base}/search/autocomplete/{q}", headers=headers)
+        resp = await client.get(f"{base}/search/autocomplete/{quote(q, safe='')}", headers=headers)
         if resp.status_code != 200:
             return {"games": []}
         games = resp.json().get("data") or []

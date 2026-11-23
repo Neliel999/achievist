@@ -1,5 +1,6 @@
 import logging
 import re
+from urllib.parse import quote
 
 import httpx
 
@@ -26,7 +27,7 @@ async def search_grid(name: str) -> str | None:
     async with httpx.AsyncClient(timeout=15) as client:
         # Search for game
         resp = await client.get(
-            f"{_BASE}/search/autocomplete/{clean_name}",
+            f"{_BASE}/search/autocomplete/{quote(clean_name, safe='')}",
             headers=headers,
         )
         if resp.status_code != 200:
